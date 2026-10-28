@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agro Management - Professional System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<style>
+        :root {
+            --primary: #4e73df; --success: #1cc88a; --danger: #e74a3b;
+            --warning: #f6c23e; --info: #36b9cc; --dark: #2c3e50;
+            --gradient: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; padding-bottom: 100px; }
+        #firebase-notice {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+        }
+        #firebase-notice.show { display: flex; }
+        .firebase-notice-box {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 480px;
+            width: 90%;
+            border-top: 6px solid #e74a3b;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .firebase-notice-box h2 { color: #e74a3b; margin-top: 0; }
+        .firebase-notice-box ol { padding-left: 20px; line-height: 2; }
+        .firebase-rules-code {
+            background: #1e1e1e;
+            color: #4ec9b0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: monospace;
+            margin: 10px 0;
+            white-space: pre;
+        }
+        #cloud-status {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 10000;
+            border-radius: 5px;
+            color: white;
+            background: #1cc88a;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: default;
+            user-select: none;
+        }
+        .bell-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        #bell-btn {
+            background: #f39c12;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            padding: 12px 16px;
+            font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            line-height: 1;
+        }
+        #bell-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #e74a3b;
+            color: white;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 900;
+            min-width: 16px;
+            height: 16px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+            line-height: 16px;
+        }
+        #bell-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 310px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+            border: 2px solid #f6c23e;
+            z-index: 9999;
+            padding: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #bell-dropdown.open { display: block; }
+        .bell-dropdown-header {
+            font-size: 14px;
+            font-weight: 800;
+            color: #d35400;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+        }
+        .bell-no-reminder {
+            color: #888;
+            font-size: 13px;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .rem-item {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+            border-left: 6px solid #ccc;
+        }
+        @keyframes alert-shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            50% { transform: translateX(3px); }
+            75% { transform: translateX(-3px); }
+            100% { transform: translateX(0); }
+        }
+        @keyframes signal-blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+        .rem-overdue { background: #fff5f5; border-left-color: #e74a3b; color: #b91c1c; animation: alert-shake 0.5s infinite; font-weight: bold; }
+        .rem-today { background: #fffbeb; border-left-color: #f6c23e; color: #92400e; animation: signal-blink 1.5s infinite; font-weight: bold; }
+        .rem-tomorrow { background: #f0f9ff; border-left-color: #36b9cc; color: #075985; }
+        .top-nav { background: var(--gradient); padding: 15px; border-radius: 15px; color: white; margin-bottom: 20px; }
+        .nav-row { display: flex; align-items: center; width: 100%; margin-bottom: 12px; }
+        .flex-wrap { display: flex; flex-wrap: wrap; gap: 10px; }
+        .justify-center { justify-content: center; }
+        .order-tag { background: #f6c23e; color: black; font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 8px; animation: signal-blink 1s infinite; display: inline-block; font-weight: 900; vertical-align: middle; }
+        .pay-tag { background: #1cc88a; color: white; font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 8px; animation: signal-blink 1s infinite; display: inline-block; font-weight: 900; vertical-align: middle; }
+        .sale-tag { background: #e74a3b; color: white; font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-left: 8px; animation: signal-blink 1s infinite; display: inline-block; font-weight: 900; vertical-align: middle; }
+        @keyframes glow-blink {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); filter: brightness(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .dash-card { padding: 15px; border-radius: 10px; color: white; text-align: center; animation: glow-blink 2s infinite ease-in-out; }
+        @keyframes blink-red {
+            0% { background-color: #fff; border-color: var(--danger); }
+            50% { background-color: #ffcccc; border-color: #ff0000; box-shadow: 0 0 15px #ff0000; }
+            100% { background-color: #fff; border-color: var(--danger); }
+        }
+        .low-stock-alert { animation: blink-red 1.2s infinite; border: 2px solid var(--danger) !important; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+        .admin-off { background: rgba(255,255,255,0.2); }
+        .global-dashboard { background: #fff; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid var(--info); }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
+        .section { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+        .card { background: white; padding: 20px; border-radius: 20px; border: 1px solid #e3e6f0; position: relative; transition: 0.3s; }
+        .stock-box { text-align: center; margin-bottom: 15px; padding: 10px; background: #f8f9fc; border-radius: 10px; border: 1px dashed #d1d3e2; }
+        .stock-val { font-size: 32px; font-weight: 900; color: var(--primary); }
+        .summary-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; text-align: center; }
+        .summary-item { padding: 10px; border-radius: 10px; color: white; }
+        .sum-bill { background: var(--primary); }
+        .sum-cash { background: var(--success); }
+        .sum-due { background: var(--danger); }
+        input, select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
+        .btn { border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; padding: 12px 18px; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger) !important; color: white; }
+        .btn-warning { background: var(--warning); color: #333; }
+        .btn-info { background: #4a69bd; }
+        .btn-dark { background: #2c3e50; }
+        .table-container { overflow-x: auto; border-radius: 10px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #f8f9fc; padding: 15px; text-align: left; color: var(--primary); }
+        td { padding: 18px 15px; border-bottom: 1px solid #f0f0f0; }
+        .tab-container { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #ddd; padding-bottom: 5px; overflow-x: auto; }
+        .tab-btn { padding: 10px 20px; border: none; background: #eee; cursor: pointer; border-radius: 8px 8px 0 0; font-weight: bold; color: #555; white-space: nowrap; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+        .modal-content { background: white; margin: 5% auto; padding: 25px; width: 90%; max-width: 850px; border-radius: 15px; position: relative; max-height: 85vh; overflow-y: auto; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #999; }
+        .cart-badge { background: red; color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; margin-left: 5px; }
+        .entry-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 10px; align-items: center; }
+        #shop-settings-panel { display: none; margin: 20px auto; padding: 25px; border-radius: 15px; background: #fff; max-width: 750px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 5px solid var(--primary); }
+        .shop-settings-grid { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; }
+        .custom-field-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; margin-top: 10px; align-items: center; }
+        .backup-zone { background: #e8f0fe; border: 2px dashed var(--primary); padding: 15px; border-radius: 10px; margin-top: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .details-cell { white-space: pre-line; line-height: 1.4; font-size: 13px; font-weight: 500; }
+        .commission-hero { background:linear-gradient(135deg,#6c5ce7 0%,#a29bfe 50%,#00b894 100%); border-radius:16px; padding:22px 24px; color:#fff; margin-bottom:18px; position:relative; overflow:hidden; }
+        .commission-hero h2 { margin:0 0 6px; font-size:1.45rem; }
+        .commission-hero p { margin:0; opacity:.9; }
+        .btn-commission-save { padding:11px 18px; background:linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff; border:0; border-radius:9px; cursor:pointer; font-weight:800; white-space:nowrap; }
+        .btn-commission-save:hover { opacity:.88; }
+        .commission-admin-bar,.commission-summary-panel,.commission-table-wrap { background:#fff; border-radius:14px; padding:18px; box-shadow:0 4px 15px rgba(0,0,0,.07); margin-bottom:18px; }
+        .commission-admin-bar { border-left:5px solid #6c5ce7; }
+        .commission-form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; align-items:end; }
+        .commission-form-grid label { display:block; font-size:.82rem; font-weight:700; margin-bottom:4px; }
+        .commission-form-grid input,.commission-form-grid select { margin:0; }
+        .commission-table-wrap { padding:0; overflow:hidden; }
+        .commission-table-wrap h3,.commission-summary-panel h3 { margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+        .commission-table-wrap h3 { padding:16px 18px; border-bottom:1px solid #eee; margin:0; }
+        .commission-table { width:100%; border-collapse:collapse; min-width:650px; }
+        .commission-table th { background:#4e73df; color:#fff; padding:11px 12px; text-align:left; font-size:.82rem; }
+        .commission-table td { padding:11px 12px; border-bottom:1px solid #eee; font-size:.86rem; }
+        .commission-pill { display:inline-block; padding:3px 9px; border-radius:20px; background:rgba(108,92,231,.14); color:#6c5ce7; font-size:.74rem; font-weight:800; }
+        .commission-action-btn { border:0; border-radius:6px; padding:5px 8px; color:#fff; cursor:pointer; font-size:.74rem; font-weight:700; margin:2px; }
+        .commission-calc-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:15px; }
+        .commission-calc-card { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,.08); }
+        .commission-calc-card-header { padding:14px 16px; color:#fff; font-weight:800; display:flex; align-items:center; gap:8px; }
+        .commission-calc-card-body { padding:15px 16px; }
+        .commission-result-row { display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid #eee; font-size:.84rem; }
+        .commission-result-row:last-child { border-bottom:0; }
+        .commission-easy-step { display:flex; gap:9px; align-items:flex-start; padding:9px 0; border-bottom:1px solid #eee; }
+        .commission-easy-number { width:22px; height:22px; flex:none; border-radius:50%; background:#6c5ce7; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.75rem; }
+        .commission-easy-step-title { font-weight:800; display:block; font-size:.84rem; }
+        .commission-easy-step-note { display:block; color:#777; font-size:.74rem; margin-top:3px; line-height:1.4; }
+        .commission-easy-formula { margin:10px 0; padding:10px; border-radius:9px; background:rgba(108,92,231,.08); text-align:center; font-size:.84rem; }
+        .commission-easy-formula strong { display:block; color:#6c5ce7; font-size:1.2rem; margin-top:4px; }
+        .commission-easy-settlement { margin-top:12px; padding:12px; border-radius:9px; text-align:center; border:1.5px solid; }
+        .commission-empty { text-align:center; padding:25px; color:#777; }
+        .commission-search { width:200px; margin:0; padding:8px 10px; }
+        @media(max-width:600px) { .commission-hero { padding:18px; } .commission-form-grid { grid-template-columns:1fr; } .commission-search { width:100%; } }
+        .return-items-list { display:grid; gap:9px; }
+        .return-item-row { display:grid; grid-template-columns:minmax(170px,2fr) minmax(90px,.7fr) minmax(120px,1fr) minmax(105px,.8fr) auto; gap:8px; align-items:center; padding:10px; border:1px solid #e3e6f0; border-radius:10px; background:#f8f9fc; }
+        .return-item-row select,.return-item-row input { margin:0; padding:9px; }
+        .return-line-total { font-weight:800; color:#d35400; text-align:right; }
+        @media(max-width:650px) { .return-item-row { grid-template-columns:1fr 1fr; } .return-item-row .return-product-select { grid-column:1/-1; } .return-line-total { text-align:left; } }
+        .fiscal-settings-box { margin:15px 0; padding:16px; background:#f5f8ff; border:1px solid #ccd8f3; border-radius:12px; }
+        .fiscal-settings-grid { display:grid; grid-template-columns:repeat(2,minmax(180px,1fr)); gap:12px; align-items:end; }
+        .report-old-toggle { display:flex; align-items:flex-start; gap:9px; padding:12px; margin-top:12px; border:1px solid #ead6a3; background:#fffaf0; border-radius:8px; }
+        .report-old-toggle input,.fiscal-view-toggle input { width:auto; margin:3px 0 0; }
+        .fiscal-view-toggle { display:flex; gap:9px; align-items:flex-start; margin-top:12px; padding:12px; border:1px solid #edd48a; background:#fff9e8; border-radius:9px; }
+        @media(max-width:600px) { .fiscal-settings-grid { grid-template-columns:1fr; } }
+        @media print {
+            body * { visibility: hidden; }
+            #global-search-report-section, #global-search-report-section * { visibility: visible; }
+            #global-search-report-section { position: absolute; left: 0; top: 0; width: 100%; }
+            .btn, #admin-zone, .top-nav, .global-dashboard, .no-print { display: none !important; }
+            table { width: 100% !important; border: 1px solid #000 !important; }
+            th, td { border: 1px solid #000 !important; padding: 8px !important; }
+        }
+</style>
+</head>
+<body>
+<div id="firebase-notice">
+<div class="firebase-notice-box">
+<h2>⚠️ Firebase Rules Setup Required</h2>
+<p>Online sync কাজ করছে না কারণ Firebase rules set করা হয়নি। নিচের steps follow করুন:</p>
+<ol>
+<li><strong>Firebase Console</strong> → <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a> এ যান</li>
+<li><strong>Realtime Database</strong> → <strong>Rules</strong> tab এ ক্লিক করুন</li>
+<li>নিচের code টি paste করুন এবং <strong>Publish</strong> করুন:</li>
+</ol>
+<div class="firebase-rules-code">{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}</div>
+<p style="font-size:12px; color:#e74a3b;">⚠️ এটি সকলের জন্য open করে দেবে। যদি শুধু আপনি ব্যবহার করেন তাহলে এটি safe।</p>
+<button class="btn btn-success" style="width:100%" onclick="retryFirebase()">✅ Rules Set করেছি, আবার চেষ্টা করুন</button>
+<button class="btn btn-warning" style="width:100%; margin-top:8px; color:#333;" onclick="document.getElementById('firebase-notice').classList.remove('show')">অফলাইনে continue করুন</button>
+</div>
+</div>
+<div id="cloud-status" title="Click to force sync" onclick="forceSyncNow()">🔄 Connecting...</div>
+<div class="top-nav">
+<div class="nav-row flex-wrap justify-center">
+<button onclick="login()" class="btn btn-primary" style="min-width: 120px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">🔑 Admin</button>
+<button onclick="logout()" class="btn btn-danger" style="min-width: 120px;">🚪 Logout</button>
+</div>
+<div class="nav-row justify-center"><div id="auth-status" class="badge admin-off">🌱 Staff Mode</div></div>
+<div class="nav-row flex-wrap justify-center">
+<button onclick="openMultiModal('Sale')" class="btn btn-danger">🛍️ Multi-Sell</button>
+<button onclick="openReturnModal()" class="btn btn-warning" style="background:#e17055;color:#fff;">↩️ Product Return</button>
+<button onclick="openMultiModal('Order')" class="btn btn-warning">📝 Multi-Order</button>
+<button onclick="openPayModal()" class="btn btn-success">💰 Pay</button>
+<div class="bell-wrapper">
+<button id="bell-btn" onclick="toggleBellDropdown(event)" title="Payment Reminders">
+                🔔
+<span id="bell-badge"></span>
+</button>
+<div id="bell-dropdown">
+<div class="bell-dropdown-header">⚠️ Payment Reminders</div>
+<div id="bell-reminder-content"><div class="bell-no-reminder">No upcoming reminders</div></div>
+<button class="btn btn-info" style="width:100%; margin-top:10px; font-size:12px;" onclick="openReminderModal(); closeBellDropdown();">➕ Set New Reminder</button>
+</div>
+</div>
+<button onclick="openCartModal()" class="btn btn-primary" style="background: #6f42c1">🛒 Cart <span id="cart-count" class="cart-badge">0</span></button>
+<button onclick="checkAdminBeforeReport()" class="btn btn-primary" style="background:#ff5722">📊 Report</button>
+<button onclick="openCommissionView()" class="btn btn-primary" style="background:#6c5ce7">💹 Commission</button>
+<button id="recycle-bin-btn" onclick="openRecycleBin()" class="btn btn-dark" style="display:none; background: #607d8b;">🗑️ Recycle Bin</button>
+</div>
+</div>
+<div id="reminderModal" class="modal">
+<div class="modal-content" style="max-width: 450px;">
+<span class="close-btn" onclick="closeModal()">&times;</span>
+<h2 style="color: var(--info);">🔔 Set Payment Reminder</h2>
+<label>Select Customer:</label>
+<select id="rem-cust-select"><option value="">-- Choose Customer --</option></select>
+<label style="margin-top:10px; display:block;">Next Payment Date:</label>
+<input type="date" id="rem-date-input">
+<button class="btn btn-info" style="width:100%; margin-top:15px;" onclick="saveReminderOnly()">✅ Set Reminder</button>
+</div>
+</div>
+<div id="multiEntryModal" class="modal">
+<div class="modal-content">
+<span class="close-btn" onclick="closeModal()">&times;</span>
+<h2 id="multi-modal-title">📝 Multi Entry</h2>
+<div id="multi-product-entries"></div>
+<button class="btn btn-info" style="width:100%; margin-bottom:10px;" onclick="addMoreProductRow()">➕ Add Another Product Row</button>
+<button id="multi-confirm-btn" class="btn" style="width:100%" onclick="addAllToCartFromMulti()">Add All to Cart List</button>
+</div>
+</div>
+<div class="global-dashboard">
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+<div><h2 style="margin: 0; color: var(--dark);">📈 Global Business Summary</h2><small id="current-fiscal-banner" style="color:#666;"></small></div>
+<div style="width: 240px;"><select id="dashboard-month-filter" onchange="renderEverything()"><option value="fiscal">Current Financial Year</option></select></div>
+</div>
+<div class="dashboard-grid">
+<div class="dash-card" style="background: var(--primary);"><div>TOTAL SALE</div><div id="global-total-sale" style="font-size: 20px; font-weight: bold;">TK 0</div></div>
+<div class="dash-card" style="background: var(--success);"><div>TOTAL CASH</div><div id="global-total-cash" style="font-size: 20px; font-weight: bold;">TK 0</div></div>
+<div class="dash-card" style="background: var(--warning); color:#5d4200;"><div>TOTAL GIFT / DISCOUNT</div><div id="global-total-discount" style="font-size: 20px; font-weight: bold;">TK 0</div></div>
+<div class="dash-card" style="background: var(--danger);"><div>TOTAL DUE</div><div id="global-total-due" style="font-size: 20px; font-weight: bold;">TK 0</div></div>
+</div>
+</div>
+<div class="section" id="global-search-report-section" style="display:none;">
+<h3 style="color: var(--primary); margin-top:0;">🔍 Global Reports (Search Sale & Cash)</h3>
+<div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; background: #f8f9fc; padding: 15px; border-radius: 10px; border: 1px solid #e3e6f0; margin-bottom: 15px;" class="no-print">
+<div><label style="font-size:12px;">Start Date:</label><input type="date" id="g-search-start" style="margin-bottom:0;"></div>
+<div><label style="font-size:12px;">End Date:</label><input type="date" id="g-search-end" style="margin-bottom:0;"></div>
+<button class="btn btn-primary" onclick="performGlobalSearchReport()">Search Now</button>
+</div>
+<div id="search-report-summary" style="margin-bottom:10px; font-weight:bold; color:var(--dark);"></div>
+<div class="table-container">
+<table>
+<thead><tr><th>Date</th><th>Customer</th><th>Type</th><th>Particulars</th><th>Amount</th><th class="no-print">Action</th></tr></thead>
+<tbody id="global-search-report-body"></tbody>
+</table>
+</div>
+<button class="btn btn-success no-print" style="margin-top:10px; width:100%" onclick="window.print()">🖨️ Print Full Search Report</button>
+</div>
+<div class="section" id="admin-zone" style="display:none; border-top: 5px solid var(--primary);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+<h2>🛠 Admin Control Panel</h2>
+<div style="display: flex; gap: 10px;">
+<button class="btn" id="restore-btn" onclick="restoreLastDeleted()" style="display:none; background: #e67e22 !important;">♻️ Restore Deleted</button>
+<button class="btn btn-success" onclick="saveAll()">💾 Save All Change</button>
+</div>
+</div>
+<div class="fiscal-settings-box">
+<h3 style="margin:0 0 8px;color:#2c3e50;">📆 Annual Accounting Period & Old Cash</h3>
+<p style="margin:0 0 12px;color:#666;font-size:13px;">Set both dates for your financial year. The selected start/end month and day repeat each year; Old Cash is calculated automatically from before the period starts.</p>
+<div class="fiscal-settings-grid">
+<div><label for="fiscal-start-input">Financial year starts on</label><input type="date" id="fiscal-start-input"></div>
+<div><label for="fiscal-end-input">Financial year ends on</label><input type="date" id="fiscal-end-input"></div>
+<div style="grid-column:1/-1;"><label>Current financial year</label><div id="fiscal-year-range-display" style="padding:12px;background:#fff;border:1px solid #ddd;border-radius:8px;font-weight:700;">—</div></div>
+<button class="btn btn-primary" onclick="saveFiscalSettings()" style="grid-column:1/-1;">💾 Save Annual Period</button>
+</div>
+<label class="fiscal-view-toggle"><input type="checkbox" id="admin-show-old-cash" onchange="toggleOldCashDisplay(this.checked)"><span><strong>Show old balance and older history in admin screens</strong><br><small>Staff view continues to show only the current financial year.</small></span></label>
+</div>
+<div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:10px">
+<div>
+<select id="admin-p-select" onchange="syncAdminFields()"><option value="new">-- Add New Product --</option></select>
+<input type="text" id="new-p-name" placeholder="Product Name" style="margin-top:5px">
+</div>
+<input type="number" id="new-p-stock" placeholder="Stock Qty">
+<input type="number" id="new-p-price" placeholder="Rate (TK)">
+</div>
+<button class="btn btn-primary" style="width:100%; margin-top:10px" onclick="addNewProduct()">➕ Save/Update Product</button>
+<div class="backup-zone">
+<strong style="color: var(--primary);">💾 Data Management:</strong>
+<button class="btn btn-info" onclick="exportData()">📥 Export Backup</button>
+<div>
+<label for="importFile" class="btn btn-warning" style="margin-bottom:0; cursor:pointer;">📤 Import Backup</label>
+<input type="file" id="importFile" style="display:none" onchange="importData(event)">
+</div>
+<button class="btn btn-dark" onclick="toggleShopSettings()">⚙️ Shop Settings</button>
+</div>
+<div id="shop-settings-panel">
+<h3 style="text-align: center; color: var(--primary);">⚙️ Shop Information Setup</h3>
+<div id="custom-fields-container" class="shop-settings-grid"></div>
+<div style="display: flex; gap: 10px; margin-top: 20px;">
+<button class="btn btn-info" onclick="addCustomField('', '')">➕ Add Info Field</button>
+<button class="btn btn-success" onclick="saveShopSetup()" style="flex-grow: 1;">💾 Save Settings</button>
+</div>
+</div>
+</div>
+<div class="section"><input type="text" id="main-search" placeholder="🔍 Search products or customers..." onkeyup="renderEverything()"></div>
+<div id="product-list" class="grid"></div>
+<div class="section">
+<h2>👥 Ledger & Accounts</h2>
+<div class="tab-container">
+<button class="tab-btn active" id="tab-daily" onclick="switchTab('daily')">📅 Daily Sale</button>
+<button class="tab-btn" id="tab-cash" onclick="switchTab('cash')">💵 Daily Cash</button>
+<button class="tab-btn" id="tab-order" onclick="switchTab('order')">📦 Daily Order</button>
+<button class="tab-btn" id="tab-all" onclick="switchTab('all')">📂 Full Ledger</button>
+</div>
+<div class="table-container">
+<table>
+<thead><tr id="ledger-header"><th>Name</th><th>Daily Total Bill</th><th>Product Details</th><th>Actions</th></tr></thead>
+<tbody id="ledger-list"></tbody>
+</table>
+</div>
+</div>
+<div id="recycleBinModal" class="modal">
+<div class="modal-content">
+<span class="close-btn" onclick="closeModal()">&times;</span>
+<h2 style="color: var(--dark);">🗑️ Recycle Bin</h2>
+<div class="table-container">
+<table>
+<thead><tr><th>Type</th><th>Name / Detail</th><th>Action</th></tr></thead>
+<tbody id="recycle-bin-list"></tbody>
+</table>
+</div>
+<button class="btn btn-danger" style="width:100%; margin-top:15px" onclick="clearRecycleBin()">🧹 Empty Recycle Bin</button>
+</div>
+</div>
+<div id="cartModal" class="modal">
+<div class="modal-content">
+<span class="close-btn" onclick="closeModal()">&times;</span>
+<h2 id="cart-modal-title">🛒 Shopping Cart</h2>
+<div class="table-container">
+<table>
+<thead><tr><th>Product</th><th>Qty</th><th>Rate</th><th>Total</th><th>Action</th></tr></thead>
+<tbody id="cartTableBody"></tbody>
+</table>
+</div>
+<div style="margin-top: 15px;">
+<select id="cart-client-select" onchange="toggleNewCustInput()">
+<option value="">-- Choose Customer --</option>
+<option value="NEW_CUST" style="color:blue; font-weight:bold;">+ Add New Customer</option>
+</select>
+<div id="cart-new-cust-fields" style="display:none; border: 1px solid var(--primary); padding:10px; border-radius:10px; margin-top:5px;">
+<input type="text" id="cart-client-manual" placeholder="Customer / Shop Name">
+<input type="text" id="cart-client-proprietor" placeholder="Proprietor Name">
+<input type="text" id="cart-client-address" placeholder="Address">
+<input type="text" id="cart-client-mobile" placeholder="Mobile Number">
+</div>
+<input type="number" id="cart-cash-paid" placeholder="Cash Paid" style="margin-top:10px; border: 2px solid var(--success); font-weight: bold;">
+<input type="hidden" id="cart-mode" value="Sale">
+<button id="cart-confirm-btn" class="btn btn-success" style="width:100%" onclick="processFinalCart()">Confirm Transaction</button>
+</div>
+</div>
+</div>
+<div id="historyModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal()">&times;</span><h3 id="modalTitle">History</h3><div class="summary-box"><div class="summary-item sum-bill"><div id="sum-bill-label">NEW PERIOD SALES</div><div id="sum-total-bill" style="font-size: 18px; font-weight: bold;">TK 0</div></div><div class="summary-item sum-cash"><div id="sum-cash-label">NEW PERIOD CASH</div><div id="sum-total-cash" style="font-size: 18px; font-weight: bold;">TK 0</div></div><div class="summary-item sum-due"><div id="sum-due-label">NEW PERIOD DUE</div><div id="sum-total-due" style="font-size: 18px; font-weight: bold;">TK 0</div></div><div id="sum-old-balance-card" class="summary-item" style="display:none;background:#6c5ce7;"><div>OLD CASH</div><div id="sum-old-balance" style="font-size: 18px; font-weight: bold;">TK 0</div></div><div id="sum-old-cash-received-card" class="summary-item" style="display:none;background:#8878e8;"><div>OLD CASH RECEIVED</div><div id="sum-old-cash-received" style="font-size: 18px; font-weight: bold;">TK 0</div></div></div><div class="table-container"><table><thead><tr><th>Date</th><th>Type</th><th>Detail</th><th>Amount</th><th>Actions</th></tr></thead><tbody id="historyTableBody"></tbody></table></div></div></div>
+<div id="reportModal" class="modal">
+<div class="modal-content">
+<span class="close-btn" onclick="closeModal()">&times;</span>
+<h2>📊 Generate PDF Report</h2>
+<label style="font-size: 12px;">Select Target Customer:</label>
+<select id="report-customer-select"><option value="ALL">Download for All Customers</option></select>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+<div><label style="font-size: 12px;">From:</label><input type="date" id="report-start"></div>
+<div><label style="font-size: 12px;">To:</label><input type="date" id="report-end"></div>
+</div>
+<small style="display:block;color:#666;">Defaults to the current financial year; dates can be changed for a custom report.</small>
+<label class="report-old-toggle"><input type="checkbox" id="report-include-old"><span><strong>Include Old Cash Received in PDF Total Cash</strong><br><small>Checked: PDF Total Cash adds New Period Cash + Old Cash Received once. Old Cash Received is shown below Grand Total for reference, not added again.</small></span></label>
+<button class="btn btn-success" style="width:100%; margin-top: 15px;" onclick="generatePDF()">📥 Download PDF Report</button>
+</div>
+</div>
+<div id="commissionModal" class="modal">
+<div class="modal-content" style="max-width:1100px;">
+<span class="close-btn" onclick="closeModal()">&times;</span>
+<div class="commission-hero">
+<h2>💹 Commission Manager</h2>
+<p>Customer commission, sales target, progress and settlement are calculated for the current financial year.</p>
+</div>
+<div id="commission-admin-panel" class="commission-admin-bar" style="display:none;">
+<h3 style="margin:0 0 14px;color:#2c3e50;">🔐 Admin — Add / Edit Commission Setting</h3>
+<div class="commission-form-grid">
+<div><label for="comm-cust-select">Select Customer</label><select id="comm-cust-select"></select></div>
+<div><label for="comm-target">Sales Target (TK)</label><input type="number" id="comm-target" min="0" step="0.01" placeholder="e.g. 100000"></div>
+<div><label for="comm-percent">Commission Percentage (%)</label><input type="number" id="comm-percent" min="0.01" max="100" step="0.01" placeholder="e.g. 5"></div>
+<div><label for="comm-note">Note (Optional)</label><input type="text" id="comm-note" placeholder="Optional note"></div>
+<div><button class="btn-commission-save" onclick="saveCommissionSetting()">💾 Save Setting</button></div>
+</div>
+<input type="hidden" id="comm-edit-id">
+</div>
+<div class="commission-table-wrap">
+<h3>📋 Commission Settings <span style="margin-left:auto;"><input type="search" id="comm-search" class="commission-search" placeholder="Search customer..." oninput="renderCommissionTable()"></span></h3>
+<div style="overflow-x:auto;">
+<table class="commission-table">
+<thead><tr><th>#</th><th>Customer</th><th>Sales Target (TK)</th><th>Commission %</th><th>Note</th><th id="comm-action-col" style="display:none;">Actions</th></tr></thead>
+<tbody id="comm-settings-tbody"><tr><td colspan="6" class="commission-empty">No commission settings.</td></tr></tbody>
+</table>
+</div>
+</div>
+<div class="commission-summary-panel">
+<h3 style="color:#2c3e50;">🧮 Commission Calculation <small style="margin-left:auto;color:#777;font-size:.78rem;font-weight:400;">Automatically updates from current-year totals</small></h3>
+<div class="commission-calc-grid" id="commission-calc-grid"><p class="commission-empty">Add a commission setting to see the calculation here.</p></div>
+</div>
+</div>
+</div>
+<div id="returnModal" class="modal">
+<div class="modal-content" style="max-width:900px;">
+<span class="close-btn" onclick="closeModal()">&times;</span>
+<h2 style="color:#d35400;">↩️ Product Return</h2>
+<p style="color:#666;margin-top:-5px;">Choose the customer and returned products. Set the refund price per unit; the amount is deducted from net sales and customer balance.</p>
+<label for="return-customer-select">Customer</label>
+<select id="return-customer-select" onchange="refreshReturnProductOptions()"><option value="">-- Choose Customer --</option></select>
+<div class="return-item-row" style="font-weight:800;color:#666;background:transparent;border:0;padding:6px 10px;">
+<span>Product</span><span>Return qty</span><span>Refund price / unit</span><span>Line total</span><span></span>
+</div>
+<div id="return-items-list" class="return-items-list"></div>
+<button class="btn btn-info" style="width:100%;margin-top:10px;" onclick="addReturnItemRow()">➕ Add Another Product</button>
+<div style="display:flex;justify-content:flex-end;gap:12px;align-items:center;margin-top:14px;padding:12px;background:#fff7ed;border-radius:10px;font-weight:800;">
+<span>Total return amount:</span><span id="return-grand-total" style="color:#d35400;font-size:1.15rem;">TK 0.00</span>
+</div>
+<button class="btn btn-success" style="width:100%;margin-top:12px;background:#d35400;" onclick="submitProductReturn()">✅ Confirm Product Return</button>
+</div>
+</div>
+<div id="payModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal()">&times;</span><h2>💰 Pay / Entry</h2>
+<select id="pay-name-select" onchange="togglePayManualInput()">
+<option value="">-- Choose Customer --</option>
+<option value="NEW_CUST" style="color:blue;">+ Add New Customer</option>
+</select>
+<div id="pay-new-cust-fields" style="display:none; border: 1px solid var(--primary); padding:10px; border-radius:10px; margin-top:5px;">
+<input type="text" id="pay-name-manual" placeholder="Customer / Shop Name">
+<input type="text" id="pay-name-proprietor" placeholder="Proprietor Name">
+<input type="text" id="pay-name-address" placeholder="Address">
+<input type="text" id="pay-name-mobile" placeholder="Mobile Number">
+</div>
+<input type="datetime-local" id="pay-date">
+<input type="number" id="pay-amount" placeholder="Amount">
+<select id="pay-type"><option value="Payment">💵 Cash Received</option><option value="OldCashReceived">💰 Old Cash Received</option><option value="Discount">🏷️ Discount / Adjustment</option><option value="Gift">🎁 Gift</option><option value="Refund">💸 Refund Cash</option><option value="Sale">📦 Previous Due (Sale)</option></select>
+<input type="text" id="pay-note" placeholder="Note">
+<button class="btn btn-success" style="width:100%" onclick="processDirectPayment()">Confirm</button>
+</div></div>
+<script>
+    const ADMIN_PASS = "Md@7182";
+    const FB_BASE = "https://roventa-vet-pharma-31c20-default-rtdb.firebaseio.com/agro_data";
+    let isAdmin = localStorage.getItem("is_admin_v2") === "true";
+    let products   = JSON.parse(localStorage.getItem("agro_p_db"))        || [];
+    let ledger     = JSON.parse(localStorage.getItem("agro_v15_ledger"))   || {};
+    let commissionSettings = JSON.parse(localStorage.getItem("agro_commission_settings")) || [];
+    let fiscalSettings = normalizeFiscalSettings(JSON.parse(localStorage.getItem("agro_fiscal_settings")) || {startMonth:1,startDay:1});
+    if(!Array.isArray(commissionSettings)) commissionSettings = [];
+    let includeOldCashInAdminView = false;
+    let recycleBin = JSON.parse(localStorage.getItem("agro_recycle_bin"))  || [];
+    let shopInfo   = JSON.parse(localStorage.getItem("agro_shop_info"))    || {
+        extras: [
+            {label: "Shop Name",  value: "My Agro Shop"},
+            {label: "Proprietor", value: "Mr. Owner"},
+            {label: "Address",    value: "Your Address Here"},
+            {label: "Mobile",     value: "017XXXXXXXX"}
+        ]
+    };
+    let tempCart = [];
+    let cartType = 'Sale';
+    let lastDeletedData = null;
+    let activeTab = 'daily';
+    let activeHistoryCustomer = null;
+    let isSyncing = false;
+    let sseSource = null;   // Firebase EventSource
+    let localVersion = 0;   // monotonic write counter (optimistic locking)
+    let remoteVersion = 0;
+    function normalizeFiscalSettings(value) {
+        const month = Number.parseInt(value && value.startMonth,10);
+        const day = Number.parseInt(value && value.startDay,10);
+        const startMonth=Number.isInteger(month)&&month>=1&&month<=12?month:1;
+        const startDay=Number.isInteger(day)&&day>=1&&day<=31?day:1;
+        const endMonth=Number.parseInt(value&&value.endMonth,10);
+        const endDay=Number.parseInt(value&&value.endDay,10);
+        const endYearOffset=Number.parseInt(value&&value.endYearOffset,10);
+        const hasSavedEnd=Number.isInteger(endMonth)&&endMonth>=1&&endMonth<=12&&
+            Number.isInteger(endDay)&&endDay>=1&&endDay<=31&&
+            Number.isInteger(endYearOffset)&&endYearOffset>=0&&endYearOffset<=1&&
+            makeFiscalDate(2000+endYearOffset,endMonth,endDay)>=makeFiscalDate(2000,startMonth,startDay);
+        if(hasSavedEnd) return {startMonth,startDay,endMonth,endDay,endYearOffset};
+        const nextStart=makeFiscalDate(2001,startMonth,startDay);
+        const defaultEnd=new Date(nextStart);defaultEnd.setDate(defaultEnd.getDate()-1);
+        return {
+            startMonth,
+            startDay,
+            endMonth:defaultEnd.getMonth()+1,
+            endDay:defaultEnd.getDate(),
+            endYearOffset:defaultEnd.getFullYear()-2000
+        };
+    }
+    function makeFiscalDate(year,month,day) {
+        const safeDay=Math.min(day,new Date(year,month,0).getDate());
+        return new Date(year,month-1,safeDay,0,0,0,0);
+    }
+    function getCurrentFiscalPeriod(referenceDate=new Date()) {
+        const config=normalizeFiscalSettings(fiscalSettings);
+        const today=new Date(referenceDate.getFullYear(),referenceDate.getMonth(),referenceDate.getDate());
+        let startYear=today.getFullYear();
+        let start=makeFiscalDate(startYear,config.startMonth,config.startDay);
+        if(today<start) {
+            startYear--;
+            start=makeFiscalDate(startYear,config.startMonth,config.startDay);
+        }
+        const end=makeFiscalDate(startYear+config.endYearOffset,config.endMonth,config.endDay);
+        const endExclusive=new Date(end);endExclusive.setDate(endExclusive.getDate()+1);
+        return {start,end,endExclusive};
+    }
+    function calculateOldCashPeriod(account) {
+        const period=getCurrentFiscalPeriod();
+        const totals=calculateAccountPeriod(account,period.start,period.endExclusive);
+        return {start:period.start,end:period.end,amount:totals.openingBalance};
+    }
+    function getCurrentDueIncludingOldCash(account,currentTotals=getCurrentAccountPeriod(account)) {
+        return currentTotals.closingDue;
+    }
+    function dateForInput(date) {
+        const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,"0"),d=String(date.getDate()).padStart(2,"0");
+        return `${y}-${m}-${d}`;
+    }
+    function parseInputDate(value) {
+        const match=String(value||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        return match ? new Date(Number(match[1]),Number(match[2])-1,Number(match[3]),0,0,0,0) : new Date(NaN);
+    }
+    function getTransactionNetBalance(account) {
+        let balance=0;
+        (account&&Array.isArray(account.transactions)?account.transactions:[]).forEach(transaction=>{
+            const amount=Number(transaction.amount)||0;
+            if(transaction.type==="Sale") balance+=amount;
+            else if(transaction.type==="Return"||transaction.type==="Refund"||transaction.type==="Payment"||transaction.type==="OldCashReceived"||transaction.type==="Discount"||transaction.type==="Gift") balance-=amount;
+        });
+        return balance;
+    }
+    function captureLegacyOpeningBalance(account) {
+        if(!account||Object.prototype.hasOwnProperty.call(account,"openingBalanceAdjustment")) return;
+        const hasStoredTotals=["totalBought","totalPaid","totalDiscount"].some(key=>Object.prototype.hasOwnProperty.call(account,key));
+        const storedBalance=(Number(account.totalBought)||0)-(Number(account.totalPaid)||0)-(Number(account.totalDiscount)||0);
+        const historyBalance=getTransactionNetBalance(account);
+        const hasHistory=Array.isArray(account.transactions)&&account.transactions.length>0;
+        account.openingBalanceAdjustment=hasStoredTotals&&!(hasHistory&&Math.abs(storedBalance)<0.005&&Math.abs(historyBalance)>0.005)
+            ? storedBalance-historyBalance
+            : 0;
+    }
+    function migrateLegacyOpeningBalances(accounts=ledger) {
+        Object.values(accounts||{}).forEach(captureLegacyOpeningBalance);
+    }
+    function calculateAccountPeriod(account,start,endExclusive) {
+        const result={openingBalance:0,totalSell:0,totalCash:0,oldCashReceived:0,gift:0,refundCash:0,newDue:0,closingDue:0};
+        let historyBalance=0;
+        (account&&Array.isArray(account.transactions)?account.transactions:[]).forEach(transaction=>{
+            const date=new Date(transaction.date);
+            const amount=Number(transaction.amount)||0;
+            if(transaction.type==="Sale") historyBalance+=amount;
+            else if(transaction.type==="Return"||transaction.type==="Refund"||transaction.type==="Payment"||transaction.type==="OldCashReceived"||transaction.type==="Discount"||transaction.type==="Gift") historyBalance-=amount;
+            if(Number.isNaN(date.getTime())) {
+                if(transaction.type==="Sale") result.openingBalance+=amount;
+                else if(transaction.type==="Return"||transaction.type==="Refund"||transaction.type==="Payment"||transaction.type==="OldCashReceived"||transaction.type==="Discount"||transaction.type==="Gift") result.openingBalance-=amount;
+                return;
+            }
+            if(date<start) {
+                if(transaction.type==="Sale") result.openingBalance+=amount;
+                else if(transaction.type==="Return"||transaction.type==="Refund"||transaction.type==="Payment"||transaction.type==="OldCashReceived"||transaction.type==="Discount"||transaction.type==="Gift") result.openingBalance-=amount;
+                return;
+            }
+            if(date>=endExclusive) return;
+            if(transaction.type==="Sale") result.totalSell+=amount;
+            else if(transaction.type==="Return"||transaction.type==="Refund") result.refundCash+=amount;
+            else if(transaction.type==="Payment") result.totalCash+=amount;
+            else if(transaction.type==="OldCashReceived") result.oldCashReceived+=amount;
+            else if(transaction.type==="Discount"||transaction.type==="Gift") result.gift+=amount;
+        });
+        if(account&&Object.prototype.hasOwnProperty.call(account,"openingBalanceAdjustment")) {
+            result.openingBalance+=Number(account.openingBalanceAdjustment)||0;
+        } else if(account) {
+            const hasStoredTotals=["totalBought","totalPaid","totalDiscount"].some(key=>Object.prototype.hasOwnProperty.call(account,key));
+            const storedBalance=(Number(account.totalBought)||0)-(Number(account.totalPaid)||0)-(Number(account.totalDiscount)||0);
+            const unrepresentedBalance=storedBalance-historyBalance;
+            if(hasStoredTotals&&Number.isFinite(unrepresentedBalance)) result.openingBalance+=unrepresentedBalance;
+        }
+        result.newDue=result.totalSell-result.totalCash-result.gift-result.refundCash;
+        result.closingDue=result.openingBalance+result.newDue-result.oldCashReceived;
+        return result;
+    }
+    function getCurrentAccountPeriod(account) {
+        const period=getCurrentFiscalPeriod();
+        return calculateAccountPeriod(account,period.start,period.endExclusive);
+    }
+    function setStatus(state, msg) {
+        const el = document.getElementById("cloud-status");
+        const map = {
+            connecting: { bg: "#f6c23e", color: "#333", text: "🔄 " + (msg || "Connecting...") },
+            syncing:    { bg: "#4e73df", color: "#fff", text: "⬆️ Saving..." },
+            online:     { bg: "#1cc88a", color: "#fff", text: "🟢 Online" },
+            error:      { bg: "#e74a3b", color: "#fff", text: "⚠️ " + (msg || "Offline") },
+            live:       { bg: "#1cc88a", color: "#fff", text: "🔴 Live" }
+        };
+        const s = map[state] || map.online;
+        el.style.background = s.bg;
+        el.style.color = s.color;
+        el.innerText = s.text;
+    }
+    async function syncToCloud() {
+        if (isSyncing) return;
+        isSyncing = true;
+        setStatus('syncing');
+        let innerStr;
+        try { innerStr = JSON.stringify({ products, ledger, shopInfo, recycleBin, commissionSettings, fiscalSettings }); }
+        catch(e) { isSyncing = false; setStatus('error', 'Data Error'); return; }
+        const nextVersion = localVersion + 1;
+        const payload = { d: innerStr, v: nextVersion, ts: Date.now() };
+        try {
+            const res = await fetch(FB_BASE + ".json", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const errText = await res.text().catch(() => '');
+                if (res.status === 401 || res.status === 403) {
+                    document.getElementById("firebase-notice").classList.add("show");
+                    setStatus('error', 'Rules Error');
+                } else {
+                    setStatus('error', 'HTTP ' + res.status);
+                    console.warn('Firebase write error', res.status, errText);
+                }
+            } else {
+                localVersion = nextVersion;  // only commit version on success
+                remoteVersion = localVersion;
+                setStatus('live');
+                saveLocal();
+            }
+        } catch (e) {
+            setStatus('error', 'No Internet');
+            saveLocal();
+        } finally {
+            isSyncing = false;
+        }
+    }
+    function saveLocal() {
+        localStorage.setItem("agro_p_db",        JSON.stringify(products));
+        localStorage.setItem("agro_v15_ledger",   JSON.stringify(ledger));
+        localStorage.setItem("agro_commission_settings", JSON.stringify(commissionSettings));
+        localStorage.setItem("agro_shop_info",    JSON.stringify(shopInfo));
+        localStorage.setItem("agro_recycle_bin",  JSON.stringify(recycleBin));
+        localStorage.setItem("agro_fiscal_settings", JSON.stringify(fiscalSettings));
+    }
+    async function loadFromCloud() {
+        setStatus('connecting');
+        try {
+            const res = await fetch(FB_BASE + ".json");
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    document.getElementById("firebase-notice").classList.add("show");
+                    setStatus('error', 'Rules Error');
+                } else {
+                    setStatus('error', 'HTTP ' + res.status);
+                }
+                renderEverything();
+                return;
+            }
+            const data = await res.json();
+            if (data && typeof data === 'object') {
+                applyRemoteData(data);
+            }
+            setStatus('live');
+            renderEverything();
+            startRealtimeListener();  // start SSE after first load
+        } catch (e) {
+            setStatus('error', 'No Internet');
+            renderEverything();
+        }
+    }
+    function applyRemoteData(data) {
+        if (data.v && data.v <= localVersion && localVersion > 0) return;
+        remoteVersion = data.v || 0;
+        let applied = false;
+        if (data.d && typeof data.d === 'string') {
+            try {
+                const inner = JSON.parse(data.d);
+                if (inner && typeof inner === 'object') {
+                    products   = inner.products   || products;
+                    ledger     = inner.ledger     || ledger;
+                    shopInfo   = inner.shopInfo   || shopInfo;
+                    recycleBin = inner.recycleBin || recycleBin;
+                    if(Array.isArray(inner.commissionSettings)) commissionSettings = inner.commissionSettings;
+                    else if(Array.isArray(inner.commissions)) commissionSettings = inner.commissions;
+                    if(inner.fiscalSettings && typeof inner.fiscalSettings === "object") fiscalSettings = normalizeFiscalSettings(inner.fiscalSettings);
+                    applied = true;
+                }
+            } catch(e) {
+                console.warn('applyRemoteData: d field parse failed, trying legacy:', e);
+            }
+        }
+        if (!applied) {
+            if (data.products || data.ledger) {
+                products   = data.products   || products;
+                ledger     = data.ledger     || ledger;
+                shopInfo   = data.shopInfo   || shopInfo;
+                recycleBin = data.recycleBin || recycleBin;
+                if(Array.isArray(data.commissionSettings)) commissionSettings = data.commissionSettings;
+                else if(Array.isArray(data.commissions)) commissionSettings = data.commissions;
+                if(data.fiscalSettings && typeof data.fiscalSettings === "object") fiscalSettings = normalizeFiscalSettings(data.fiscalSettings);
+            }
+        }
+        migrateLegacyOpeningBalances(ledger);
+        saveLocal();
+    }
+    function startRealtimeListener() {
+        if (sseSource) { sseSource.close(); sseSource = null; }
+        try {
+            sseSource = new EventSource(FB_BASE + ".json");
+            sseSource.addEventListener("put", function(e) {
+                try {
+                    const msg = JSON.parse(e.data);
+                    if (!msg || !msg.data) return;
+                    const incoming = msg.data;
+                    if (typeof incoming !== 'object') return;
+                    if (incoming.v && incoming.v === localVersion) return;
+                    applyRemoteData(incoming);
+                    setStatus('live');
+                    renderEverything();
+                } catch(_) {}
+            });
+            sseSource.addEventListener("patch", function(e) {
+                fetch(FB_BASE + ".json").then(r => r.json()).then(data => {
+                    if (data && typeof data === 'object') {
+                        applyRemoteData(data);
+                        setStatus('live');
+                        renderEverything();
+                    }
+                }).catch(() => {});
+            });
+            sseSource.onerror = function() {
+                setStatus('error', 'Reconnecting...');
+                if (sseSource) { sseSource.close(); sseSource = null; }
+                setTimeout(startRealtimeListener, 5000);
+            };
+        } catch(e) {
+            startPolling();
+        }
+    }
+    let pollTimer = null;
+    function startPolling() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(async () => {
+            try {
+                const res = await fetch(FB_BASE + ".json");
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && typeof data === 'object') {
+                    if (!data.v || data.v !== localVersion) {
+                        applyRemoteData(data);
+                        setStatus('live');
+                        renderEverything();
+                    }
+                }
+            } catch(_) {}
+        }, 15000);
+    }
+    function forceSyncNow() {
+        if (sseSource) { sseSource.close(); sseSource = null; }
+        loadFromCloud();
+    }
+    async function retryFirebase() {
+        document.getElementById("firebase-notice").classList.remove("show");
+        await loadFromCloud();
+    }
+    function autoSaveData() {
+        saveLocal();
+        syncToCloud();
+    }
+    let bellDropdownOpen = false;
+    function toggleBellDropdown(e) {
+        e.stopPropagation();
+        bellDropdownOpen = !bellDropdownOpen;
+        const dd = document.getElementById("bell-dropdown");
+        if (bellDropdownOpen) { dd.classList.add("open"); renderBellReminders(); }
+        else dd.classList.remove("open");
+    }
+    function closeBellDropdown() {
+        bellDropdownOpen = false;
+        document.getElementById("bell-dropdown").classList.remove("open");
+    }
+    document.addEventListener("click", function(e) {
+        if (!document.getElementById("bell-btn").contains(e.target) &&
+            !document.getElementById("bell-dropdown").contains(e.target)) {
+            closeBellDropdown();
+        }
+    });
+    function getReminders() {
+        const today    = new Date(); today.setHours(0,0,0,0);
+        const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+        let list = [];
+        Object.keys(ledger).forEach(name => {
+            const dateStr = ledger[name].nextPaymentDate;
+            if (dateStr) {
+                const d = new Date(dateStr); d.setHours(0,0,0,0);
+                if (d <= tomorrow) list.push({ name, date: d, dateStr });
+            }
+        });
+        return list.sort((a,b) => a.date - b.date);
+    }
+    function renderBellReminders() {
+        const content = document.getElementById("bell-reminder-content");
+        const reminders = getReminders();
+        const today = new Date(); today.setHours(0,0,0,0);
+        const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+        if (reminders.length === 0) {
+            content.innerHTML = '<div class="bell-no-reminder">কোনো আসন্ন রিমাইন্ডার নেই 🎉</div>';
+        } else {
+            content.innerHTML = reminders.map(item => {
+                let st, cls;
+                if (item.date < today) { st = "🚨 OVERDUE"; cls = "rem-overdue"; }
+                else if (item.date.getTime() === today.getTime()) { st = "🔔 TODAY"; cls = "rem-today"; }
+                else { st = "📅 TOMORROW"; cls = "rem-tomorrow"; }
+                return `<div class="rem-item ${cls}"><strong>${item.name}</strong><br><span>${st}: ${item.dateStr}</span></div>`;
+            }).join("");
+        }
+    }
+    function checkPaymentReminders() {
+        const badge = document.getElementById("bell-badge");
+        const count = getReminders().length;
+        if (count > 0) { badge.style.display = "inline-flex"; badge.innerText = count; }
+        else badge.style.display = "none";
+        if (bellDropdownOpen) renderBellReminders();
+    }
+    function openReminderModal() {
+        const sel = document.getElementById("rem-cust-select");
+        sel.innerHTML = `<option value="">-- Choose Customer --</option>` +
+            Object.keys(ledger).sort().map(n => `<option value="${n}">${n}</option>`).join('');
+        document.getElementById("reminderModal").style.display = "block";
+    }
+    function saveReminderOnly() {
+        const name = document.getElementById("rem-cust-select").value;
+        const date = document.getElementById("rem-date-input").value;
+        if(!name || !date) return alert("Select Customer and Date");
+        if(!ledger[name]) ledger[name] = { totalBought:0, totalPaid:0, transactions:[], nextPaymentDate:'' };
+        ledger[name].nextPaymentDate = date;
+        autoSaveData(); renderEverything(); closeModal();
+        alert("Reminder set for " + name);
+    }
+    function openRecycleBin() {
+        const list = document.getElementById("recycle-bin-list");
+        list.innerHTML = recycleBin.length === 0
+            ? "<tr><td colspan='3' align='center'>Empty</td></tr>"
+            : recycleBin.map((item, idx) => `<tr>
+<td><strong>${item.type.toUpperCase()}</strong></td>
+<td>${item.type === 'customer' ? item.name : item.data.name}</td>
+<td><button class="btn btn-success" style="padding:5px 10px;" onclick="restoreFromBin(${idx})">Restore</button></td>
+</tr>`).join('');
+        document.getElementById("recycleBinModal").style.display = "block";
+    }
+    function restoreFromBin(idx) {
+        const item = recycleBin[idx];
+        if (item.type === 'customer') ledger[item.name] = item.data;
+        else products.push(item.data);
+        recycleBin.splice(idx, 1);
+        autoSaveData(); renderEverything(); openRecycleBin();
+    }
+    function clearRecycleBin() {
+        if (confirm("Delete everything forever?")) { recycleBin = []; autoSaveData(); openRecycleBin(); }
+    }
+    function openMultiModal(type) {
+        cartType = type;
+        document.getElementById("multi-modal-title").innerText = type === 'Sale' ? "🛍️ Multi-Sell Entry" : "📝 Multi-Order Entry";
+        document.getElementById("multi-confirm-btn").className = type === 'Sale' ? "btn btn-danger" : "btn btn-warning";
+        document.getElementById("multi-product-entries").innerHTML = "";
+        addMoreProductRow();
+        document.getElementById("multiEntryModal").style.display = "block";
+    }
+    function addMoreProductRow() {
+        const div = document.createElement("div");
+        div.className = "entry-row";
+        div.innerHTML = `
+<select class="ord-p-idx" onchange="setRowPrice(this)">
+<option value="">Select Product</option>
+                ${products.map((p,i) => `<option value="${i}">${p.name} (Stk: ${p.stock})</option>`).join('')}
+</select>
+<input type="number" class="ord-qty" placeholder="Qty">
+<input type="number" class="ord-bonus" placeholder="Bonus" value="0">
+<input type="number" class="ord-price" placeholder="Rate">
+<button onclick="this.parentElement.remove()" style="background:red;color:white;border:none;border-radius:5px;padding:5px 10px;cursor:pointer">×</button>`;
+        document.getElementById("multi-product-entries").appendChild(div);
+    }
+    function setRowPrice(el) {
+        const idx = el.value;
+        if(idx !== "") el.parentElement.querySelector('.ord-price').value = products[idx].price || 0;
+    }
+    function addAllToCartFromMulti() {
+        let valid = false;
+        document.querySelectorAll('.entry-row').forEach(row => {
+            const i = row.querySelector('.ord-p-idx').value;
+            const q = parseInt(row.querySelector('.ord-qty').value) || 0;
+            const b = parseInt(row.querySelector('.ord-bonus').value) || 0;
+            const r = parseFloat(row.querySelector('.ord-price').value) || 0;
+            if(i !== "" && q > 0) {
+                if(cartType === 'Sale' && products[i].stock < (q+b)) { alert("No Stock for " + products[i].name); }
+                else { tempCart.push({ pIdx:i, name:products[i].name, qty:q, bonus:b, rate:r, total:q*r }); valid=true; }
+            }
+        });
+        if(valid) { closeModal(); renderEverything(); openCartModal(); }
+        else alert("Select product and quantity correctly.");
+    }
+    function escapeReturnHTML(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+    }
+    function getCustomerReturnableQty(customerName, productName) {
+        const account = ledger[customerName];
+        if(!account || !Array.isArray(account.transactions)) return 0;
+        let soldQty = 0, returnedQty = 0;
+        account.transactions.forEach(transaction=>{
+            if(transaction.type === "Sale") {
+                if(Array.isArray(transaction.saleItems)) {
+                    transaction.saleItems.forEach(item=>{
+                        if(item.productName === productName) soldQty += (Number(item.qty)||0) + (Number(item.bonus)||0);
+                    });
+                } else {
+                    String(transaction.items||"").split(/\r?\n/).forEach(line=>{
+                        const match = line.match(/^\s*\d+\.\s*(.*?)\s+\((\d+)p\s*\+\s*(\d+)p\)\s*$/);
+                        if(match && match[1] === productName) soldQty += Number(match[2]) + Number(match[3]);
+                    });
+                }
+            } else if(transaction.type === "Return" && Array.isArray(transaction.returnItems)) {
+                transaction.returnItems.forEach(item=>{
+                    if(item.productName === productName) returnedQty += Number(item.qty)||0;
+                });
+            }
+        });
+        return Math.max(0,soldQty-returnedQty);
+    }
+    function openReturnModal() {
+        if(!Object.keys(ledger).length) return alert("Create or select a customer before recording a return.");
+        if(!products.length) return alert("No products are available to return.");
+        const customerSelect = document.getElementById("return-customer-select");
+        customerSelect.innerHTML = '<option value="">-- Choose Customer --</option>' +
+            Object.keys(ledger).sort((a,b)=>a.localeCompare(b)).map(name=>`<option value="${escapeReturnHTML(name)}">${escapeReturnHTML(name)}</option>`).join("");
+        document.getElementById("return-items-list").innerHTML = "";
+        addReturnItemRow();
+        refreshReturnProductOptions();
+        updateReturnTotals();
+        document.getElementById("returnModal").style.display = "block";
+    }
+    function addReturnItemRow() {
+        if(!products.length) return alert("No products are available to return.");
+        const row = document.createElement("div");
+        row.className = "return-item-row";
+        const options = products.map((product,index)=>`<option value="${index}">${escapeReturnHTML(product.name)}</option>`).join("");
+        row.innerHTML = `<select class="return-product-select" onchange="handleReturnProductChange(this)"><option value="">-- Select Product --</option>${options}</select>
+<input class="return-qty" type="number" min="1" step="1" value="1" placeholder="Qty" aria-label="Return quantity" oninput="updateReturnTotals()">
+<input class="return-unit-price" type="number" min="0" step="0.01" placeholder="TK per unit" aria-label="Refund price per unit" oninput="updateReturnTotals()">
+<div class="return-line-total">TK 0.00</div>
+<button type="button" onclick="removeReturnItemRow(this)" style="background:#d63031;color:#fff;border:0;border-radius:6px;padding:8px 11px;cursor:pointer;">×</button>`;
+        document.getElementById("return-items-list").appendChild(row);
+        refreshReturnProductOptions();
+    }
+    function refreshReturnProductOptions() {
+        const customerName = document.getElementById("return-customer-select")?.value || "";
+        document.querySelectorAll("#return-items-list .return-product-select").forEach(select=>{
+            const previousValue = select.value;
+            select.innerHTML = '<option value="">-- Select Product --</option>' +
+                products.map((product,index)=>{
+                    const available = customerName ? getCustomerReturnableQty(customerName,product.name) : 0;
+                    return `<option value="${index}" ${available<=0?'disabled':''}>${escapeReturnHTML(product.name)} — returnable: ${available}</option>`;
+                }).join("");
+            if(previousValue !== "" && products[Number(previousValue)] && getCustomerReturnableQty(customerName,products[Number(previousValue)].name)>0) {
+                select.value = previousValue;
+            } else {
+                select.value = "";
+                select.parentElement.querySelector(".return-unit-price").value = "";
+            }
+        });
+        updateReturnTotals();
+    }
+    function handleReturnProductChange(select) {
+        const productValue = select.value;
+        const productIndex = Number(productValue);
+        const priceInput = select.parentElement.querySelector(".return-unit-price");
+        const customerName = document.getElementById("return-customer-select").value;
+        const qtyInput = select.parentElement.querySelector(".return-qty");
+        const available = productValue !== "" && products[productIndex] ? getCustomerReturnableQty(customerName,products[productIndex].name) : 0;
+        qtyInput.max = available || "";
+        if(Number(qtyInput.value)>available && available>0) qtyInput.value = available;
+        priceInput.value = productValue !== "" && Number.isInteger(productIndex) && products[productIndex] ? (Number(products[productIndex].price)||0) : "";
+        updateReturnTotals();
+    }
+    function removeReturnItemRow(button) {
+        const list = document.getElementById("return-items-list");
+        if(list.children.length <= 1) {
+            button.parentElement.querySelector(".return-product-select").value = "";
+            button.parentElement.querySelector(".return-qty").value = "1";
+            button.parentElement.querySelector(".return-unit-price").value = "";
+        } else {
+            button.parentElement.remove();
+        }
+        updateReturnTotals();
+    }
+    function updateReturnTotals() {
+        let grandTotal = 0;
+        document.querySelectorAll("#return-items-list .return-item-row").forEach(row=>{
+            const qty = Number(row.querySelector(".return-qty").value);
+            const price = Number(row.querySelector(".return-unit-price").value);
+            const lineTotal = Number.isFinite(qty) && qty > 0 && Number.isFinite(price) && price >= 0 ? qty*price : 0;
+            row.querySelector(".return-line-total").innerText = "TK " + lineTotal.toFixed(2);
+            grandTotal += lineTotal;
+        });
+        document.getElementById("return-grand-total").innerText = "TK " + grandTotal.toFixed(2);
+    }
+    function submitProductReturn() {
+        const customerName = document.getElementById("return-customer-select").value;
+        if(!customerName || !ledger[customerName]) return alert("Please choose an existing customer.");
+        const rows = Array.from(document.querySelectorAll("#return-items-list .return-item-row"));
+        if(!rows.length) return alert("Add at least one returned product.");
+        const returnItems = [];
+        for(const row of rows) {
+            const productValue = row.querySelector(".return-product-select").value;
+            const productIndex = Number(productValue);
+            const qty = Number(row.querySelector(".return-qty").value);
+            const unitPriceRaw = row.querySelector(".return-unit-price").value;
+            const unitPrice = Number(unitPriceRaw);
+            if(productValue === "" || !Number.isInteger(productIndex) || !products[productIndex]) return alert("Select a product in every return row.");
+            if(!Number.isInteger(qty) || qty <= 0) return alert("Return quantity must be a whole number greater than 0.");
+            if(unitPriceRaw === "" || !Number.isFinite(unitPrice) || unitPrice < 0) return alert("Enter a valid refund price for every product.");
+            returnItems.push({productName:products[productIndex].name,qty,unitPrice,lineTotal:qty*unitPrice});
+        }
+        const qtyByProduct = {};
+        returnItems.forEach(item=>qtyByProduct[item.productName]=(qtyByProduct[item.productName]||0)+item.qty);
+        for(const [productName,requestedQty] of Object.entries(qtyByProduct)) {
+            const availableQty = getCustomerReturnableQty(customerName,productName);
+            if(requestedQty>availableQty) return alert(`"${productName}" has only ${availableQty} unit(s) returnable for this customer.`);
+        }
+        const total = returnItems.reduce((sum,item)=>sum+item.lineTotal,0);
+        const productSummary = returnItems.map(item=>`${item.productName} × ${item.qty}`).join(", ");
+        if(!confirm(`Confirm product return for ${customerName}?\n${productSummary}\nRefund / sale deduction: TK ${total.toFixed(2)}\nReturned quantities will be added back to stock.`)) return;
+        returnItems.forEach(item=>{
+            const product = products.find(p=>p.name===item.productName);
+            if(product) product.stock = (Number(product.stock)||0) + item.qty;
+        });
+        const detail = returnItems.map((item,index)=>`${index+1}. ${item.productName} (${item.qty} pcs × TK ${item.unitPrice.toFixed(2)} = TK ${item.lineTotal.toFixed(2)})`).join("\n");
+        recordTransaction(customerName,"Return",detail,total,{returnItems});
+        autoSaveData();
+        closeModal();
+        renderEverything();
+        showHistory(customerName);
+    }
+    function toggleShopSettings() {
+        const panel = document.getElementById("shop-settings-panel");
+        panel.style.display = panel.style.display === "none" ? "block" : "none";
+        const container = document.getElementById("custom-fields-container");
+        container.innerHTML = "";
+        (shopInfo.extras && shopInfo.extras.length > 0)
+            ? shopInfo.extras.forEach(e => addCustomField(e.label, e.value))
+            : [0,1,2,3].forEach(() => addCustomField("",""));
+    }
+    function addCustomField(l="", v="") {
+        const div = document.createElement("div"); div.className = "custom-field-row";
+        div.innerHTML = `<input type="text" placeholder="Label" class="extra-label" value="${l}">
+<input type="text" placeholder="Value" class="extra-value" value="${v}">
+<button class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:5px 12px;">×</button>`;
+        document.getElementById("custom-fields-container").appendChild(div);
+    }
+    function saveShopSetup() {
+        const extras = [];
+        document.querySelectorAll('.custom-field-row').forEach(row => {
+            const l = row.querySelector('.extra-label').value.trim();
+            const v = row.querySelector('.extra-value').value.trim();
+            if(l||v) extras.push({label:l, value:v});
+        });
+        shopInfo = { extras };
+        autoSaveData(); alert("Shop Information Updated!"); toggleShopSettings();
+    }
+    function populateDropdowns() {
+        const names = Object.keys(ledger).sort();
+        const baseOpts = `<option value="">-- Choose Customer --</option><option value="NEW_CUST" style="color:blue;">+ Add New Customer</option>` + names.map(n=>`<option value="${n}">${n}</option>`).join('');
+        ["cart-client-select","pay-name-select"].forEach(id => {
+            const el = document.getElementById(id); if(el) el.innerHTML = baseOpts;
+        });
+        const rep = document.getElementById("report-customer-select");
+        if(rep) {
+            const cur = rep.value;
+            rep.innerHTML = `<option value="ALL">Download for All Customers</option>` + names.map(n=>`<option value="${n}">${n}</option>`).join('');
+            rep.value = cur;
+        }
+    }
+    function toggleNewCustInput() {
+        document.getElementById("cart-new-cust-fields").style.display =
+            document.getElementById("cart-client-select").value === "NEW_CUST" ? "block" : "none";
+    }
+    function togglePayManualInput() {
+        document.getElementById("pay-new-cust-fields").style.display =
+            document.getElementById("pay-name-select").value === "NEW_CUST" ? "block" : "none";
+    }
+    function exportData() {
+        const data = { products, ledger, shopInfo, commissionSettings, fiscalSettings, exportDate: new Date().toLocaleString() };
+        const a = document.createElement('a');
+        a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+        a.download = "Agro_Backup_" + new Date().toLocaleDateString() + ".json";
+        a.click();
+    }
+    function importData(event) {
+        const file = event.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const imp = JSON.parse(e.target.result);
+                if(confirm("Replace current data?")) {
+                    products=imp.products||[]; ledger=imp.ledger||{}; shopInfo=imp.shopInfo||{extras:[]};
+                    if(Array.isArray(imp.commissionSettings)) commissionSettings=imp.commissionSettings;
+                    if(imp.fiscalSettings && typeof imp.fiscalSettings==="object") fiscalSettings=normalizeFiscalSettings(imp.fiscalSettings);
+                    migrateLegacyOpeningBalances(ledger);
+                    autoSaveData(); location.reload();
+                }
+            } catch { alert("Invalid File"); }
+        };
+        reader.readAsText(file);
+    }
+    function syncAdminFields() {
+        const sel = document.getElementById("admin-p-select");
+        const nm  = document.getElementById("new-p-name");
+        const pr  = document.getElementById("new-p-price");
+        if(sel.value === "new") { nm.value=""; pr.value=""; nm.style.display="block"; }
+        else { const p=products[sel.value]; nm.value=p.name; pr.value=p.price; nm.style.display="none"; }
+    }
+    function switchTab(tab) {
+        activeTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const t = document.getElementById('tab-' + tab); if(t) t.classList.add('active');
+        renderEverything();
+    }
+    function populateFiscalPeriodUI() {
+        const period=getCurrentFiscalPeriod();
+        const startInput=document.getElementById("fiscal-start-input");
+        const endInput=document.getElementById("fiscal-end-input");
+        if(startInput&&document.activeElement!==startInput) startInput.value=dateForInput(period.start);
+        if(endInput&&document.activeElement!==endInput) endInput.value=dateForInput(period.end);
+        const range=document.getElementById("fiscal-year-range-display");
+        if(range) range.innerText=`${dateForInput(period.start)} to ${dateForInput(period.end)}`;
+        const banner=document.getElementById("current-fiscal-banner");
+        if(banner) banner.innerText=`Current financial year: ${dateForInput(period.start)} to ${dateForInput(period.end)}`;
+        const toggle=document.getElementById("admin-show-old-cash");
+        if(toggle) toggle.checked=!!includeOldCashInAdminView;
+    }
+    function saveFiscalSettings() {
+        if(!isAdmin) return alert("Admin access required to change the financial year.");
+        const selectedStart=parseInputDate(document.getElementById("fiscal-start-input").value);
+        const selectedEnd=parseInputDate(document.getElementById("fiscal-end-input").value);
+        if(Number.isNaN(selectedStart.getTime())||Number.isNaN(selectedEnd.getTime())) return alert("Choose valid financial-year start and end dates.");
+        if(selectedEnd<selectedStart) return alert("Financial-year end date must be on or after its start date.");
+        const endYearOffset=selectedEnd.getFullYear()-selectedStart.getFullYear();
+        if(endYearOffset>1) return alert("Choose a financial-year range within one annual cycle.");
+        const oldSettings=fiscalSettings;
+        fiscalSettings=normalizeFiscalSettings({
+            startMonth:selectedStart.getMonth()+1,
+            startDay:selectedStart.getDate(),
+            endMonth:selectedEnd.getMonth()+1,
+            endDay:selectedEnd.getDate(),
+            endYearOffset
+        });
+        if(!confirm(`Use this annual cycle?\n${dateForInput(selectedStart)} to ${dateForInput(selectedEnd)}\nThe selected start/end month and day will repeat each year.`)) {
+            fiscalSettings=oldSettings;
+            populateFiscalPeriodUI();
+            return;
+        }
+        autoSaveData();
+        populateFiscalPeriodUI();
+        renderEverything();
+        alert("Annual accounting period saved.");
+    }
+    function toggleOldCashDisplay(checked) {
+        if(!isAdmin) return;
+        includeOldCashInAdminView=!!checked;
+        renderEverything();
+        if(activeHistoryCustomer&&document.getElementById("historyModal").style.display==="block") showHistory(activeHistoryCustomer);
+    }
+    function prepareFiscalReport() {
+        const period=getCurrentFiscalPeriod();
+        document.getElementById("report-start").value=dateForInput(period.start);
+        document.getElementById("report-end").value=dateForInput(period.end);
+        document.getElementById("report-include-old").checked=false;
+    }
+    function renderEverything() {
+        const query = document.getElementById("main-search").value.toLowerCase();
+        const todayStr = new Date().toLocaleDateString();
+        checkPaymentReminders();
+        populateFiscalPeriodUI();
+        if(isAdmin) {
+            document.getElementById("global-search-report-section").style.display="block";
+            document.getElementById("recycle-bin-btn").style.display="inline-flex";
+        }
+        document.getElementById("product-list").innerHTML = products.map((p,i) => {
+            if(!p.name.toLowerCase().includes(query)) return '';
+            const isLow = p.stock < 12;
+            return `<div class="card ${isLow?'low-stock-alert':''}">
+                ${isAdmin?`<button onclick="deleteProduct(${i})" style="position:absolute;top:10px;right:10px;background:red;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer">×</button>`:''}
+<h3>${p.name} ${isLow?'⚠️':''}</h3>
+<div class="stock-box"><span class="stock-val">${p.stock}</span></div>
+<div style="font-size:12px;color:#777;margin-bottom:10px">Rate: TK ${p.price||0}</div>
+</div>`;
+        }).join('');
+        const adminSelect = document.getElementById("admin-p-select");
+        if(adminSelect) {
+            const cur = adminSelect.value;
+            adminSelect.innerHTML = `<option value="new">-- Add New Product --</option>` + products.map((p,i)=>`<option value="${i}">${p.name}</option>`).join('');
+            adminSelect.value = cur;
+        }
+        const header = document.getElementById("ledger-header");
+        if(activeTab==='cash')  header.innerHTML="<th>Name</th><th>Date</th><th>Detail</th><th>Paid Amount</th><th>Actions</th>";
+        else if(activeTab==='order') header.innerHTML="<th>Name</th><th>Date</th><th>Product Detail</th><th>Order Val</th><th>Actions</th>";
+        else if(activeTab==='daily') header.innerHTML="<th>Name</th><th>Daily Total Bill</th><th>Product Details</th><th>Actions</th>";
+        else if(isAdmin&&includeOldCashInAdminView) header.innerHTML="<th>Name</th><th>Old Cash</th><th>Old Cash Received</th><th>Total Sell</th><th>Total Cash</th><th>Gift</th><th>Refund Cash</th><th>New Due</th><th>Combined Dues</th><th>Actions</th>";
+        else header.innerHTML="<th>Name</th><th>New Period Sales</th><th>New Period Cash</th><th>New Period Due</th><th>Actions</th>";
+        document.getElementById("ledger-list").innerHTML = Object.keys(ledger).filter(n=>n.toLowerCase().includes(query)).map(name => {
+            const acc = ledger[name];
+            let rowsHtml = "";
+            if(activeTab==='all') {
+                const totals=getCurrentAccountPeriod(acc);
+                const actions=`<button class="btn btn-success" onclick="showHistory('${name}')">History</button>${isAdmin?`<button class="btn btn-warning" onclick="editCustomerDetails('${name}')">Edit</button><button class="btn btn-danger" onclick="deleteCustomer('${name}')">Del</button>`:''}`;
+                if(isAdmin&&includeOldCashInAdminView) {
+                    const oldCash=totals.openingBalance;
+                    const combinedDue=totals.closingDue;
+                    return `<tr><td><strong>${name}</strong></td><td>TK ${oldCash.toFixed(2)}</td><td>TK ${totals.oldCashReceived.toFixed(2)}</td><td>TK ${totals.totalSell.toFixed(2)}</td><td>TK ${totals.totalCash.toFixed(2)}</td><td>TK ${totals.gift.toFixed(2)}</td><td>TK ${totals.refundCash.toFixed(2)}</td><td style="color:${totals.newDue>0?'red':'green'}">TK ${totals.newDue.toFixed(2)}</td><td style="color:${combinedDue>0?'red':'green'};font-weight:bold;">TK ${combinedDue.toFixed(2)}</td><td style="display:flex;gap:5px">${actions}</td></tr>`;
+                }
+                const netSales=totals.totalSell-totals.refundCash;
+                return `<tr><td><strong>${name}</strong></td><td>TK ${netSales.toFixed(2)}</td><td>TK ${totals.totalCash.toFixed(2)}</td><td style="color:${totals.newDue>0?'red':'green'};font-weight:bold;">TK ${totals.newDue.toFixed(2)}</td><td style="display:flex;gap:5px">${actions}</td></tr>`;
+            }
+            if(activeTab==='daily') {
+                let dTot=0, dLines=[];
+                acc.transactions.forEach(t=>{
+                    if(new Date(t.date).toLocaleDateString()===todayStr&&t.type==="Sale"){dTot+=t.amount;dLines.push(t.items);}
+                    else if(new Date(t.date).toLocaleDateString()===todayStr&&(t.type==="Return"||t.type==="Refund")){dTot-=t.amount;dLines.push(`↩ ${t.type==="Refund"?"REFUND CASH":"RETURN"}: ${t.items}`);}
+                });
+                if(dLines.length) return `<tr><td><strong>${name}<span class="sale-tag">NET SALE</span></strong></td><td style="color:${dTot<0?'#d35400':'inherit'}">TK ${dTot.toFixed(2)}</td><td class="details-cell">${dLines.join('\n')}</td><td><button class="btn btn-success" onclick="showHistory('${name}')">View</button></td></tr>`;
+                return "";
+            }
+            acc.transactions.forEach((t,i)=>{
+                if(new Date(t.date).toLocaleDateString()===todayStr){
+                    if(activeTab==='cash'&&(t.type==="Payment"||t.type==="OldCashReceived")) rowsHtml+=`<tr><td><strong>${name}<span class="pay-tag">${t.type==="OldCashReceived"?"OLD CASH RECEIVED":"PAYMENT"}</span></strong></td><td>${t.date.split(',')[1]||t.date}</td><td class="details-cell">${t.items}</td><td style="font-weight:bold;">TK ${t.amount.toFixed(2)}</td><td><button class="btn btn-success" onclick="showHistory('${name}')">View</button></td></tr>`;
+                    else if(activeTab==='cash'&&(t.type==="Discount"||t.type==="Gift")) rowsHtml+=`<tr><td><strong>${name}<span class="pay-tag" style="background:#f6c23e;color:#5d4200;">${t.type==="Gift"?"GIFT":"DISCOUNT"}</span></strong></td><td>${t.date.split(',')[1]||t.date}</td><td class="details-cell">${t.items}</td><td style="font-weight:bold;color:#d35400;">- TK ${t.amount.toFixed(2)}</td><td><button class="btn btn-success" onclick="showHistory('${name}')">View</button></td></tr>`;
+                    else if(activeTab==='cash'&&(t.type==="Return"||t.type==="Refund")) rowsHtml+=`<tr><td><strong>${name}<span class="pay-tag" style="background:#e74a3b;color:#fff;">REFUND CASH</span></strong></td><td>${t.date.split(',')[1]||t.date}</td><td class="details-cell">${t.items}</td><td style="font-weight:bold;color:#e74a3b;">- TK ${t.amount.toFixed(2)}</td><td><button class="btn btn-success" onclick="showHistory('${name}')">View</button></td></tr>`;
+                    else if(activeTab==='order'&&t.type==="Order") rowsHtml+=`<tr><td><strong>${name}<span class="order-tag">ORDER</span></strong></td><td>${t.date.split(',')[1]||t.date}</td><td class="details-cell">${t.items}</td><td style="font-weight:bold;">TK ${t.amount.toFixed(2)}</td><td><button class="btn btn-success" onclick="showHistory('${name}')">View</button></td></tr>`;
+                }
+            });
+            return rowsHtml;
+        }).join('');
+        populateDropdowns();
+        document.getElementById("cart-count").innerText = tempCart.length;
+        calculateGlobalDashboard();
+        if(document.getElementById("commissionModal")?.style.display === "block") {
+            populateCommissionCustomerDropdown();
+            renderCommissionTable();
+            renderCommissionCalcGrid();
+        }
+    }
+    function performGlobalSearchReport() {
+        const start = document.getElementById("g-search-start").value;
+        const end   = document.getElementById("g-search-end").value;
+        if(!start||!end) return alert("Select Both Dates");
+        const sDate=new Date(start), eDate=new Date(end); eDate.setHours(23,59,59);
+        let sTotal=0,cTotal=0,dTotal=0,oldCashReceivedTotal=0,html="";
+        Object.keys(ledger).forEach(custName => {
+            ledger[custName].transactions.forEach(t => {
+                const tDate=new Date(t.date);
+                if(tDate>=sDate&&tDate<=eDate) {
+                    if(t.type==='Sale')sTotal+=t.amount;
+                    else if(t.type==='Return'||t.type==='Refund')sTotal-=t.amount;
+                    else if(t.type==='Payment')cTotal+=t.amount;
+                    else if(t.type==='OldCashReceived')oldCashReceivedTotal+=t.amount;
+                    else if(t.type==='Discount'||t.type==='Gift')dTotal+=t.amount;
+                    const color=t.type==='Sale'?'#e74a3b':(t.type==='Return'||t.type==='Refund'?'#d35400':(t.type==='Discount'||t.type==='Gift'?'#d35400':'#1cc88a'));
+                    html+=`<tr><td><small>${t.date}</small></td><td>${custName}</td><td style="color:${color};font-weight:bold;">${t.type}</td><td class="details-cell">${t.items}</td><td>${t.type==='Return'||t.type==='Refund'?'- ':''}TK ${t.amount.toFixed(2)}</td><td class="no-print"><button class="btn btn-primary btn-sm" onclick="printSingleMemoReport('${custName}','${t.date}','${t.type}','${t.items}',${t.amount})">Print</button></td></tr>`;
+                }
+            });
+        });
+        document.getElementById("global-search-report-body").innerHTML = html || "<tr><td colspan='6' align='center'>No data found.</td></tr>";
+        document.getElementById("search-report-summary").innerHTML = `<span style="color:var(--danger)">Period Net Sale: ${sTotal.toFixed(2)}</span> | <span style="color:var(--success)">Period Cash: ${cTotal.toFixed(2)}</span> | <span style="color:#6c5ce7">Old Cash Received: ${oldCashReceivedTotal.toFixed(2)}</span> | <span style="color:#d35400">Period Gift / Discount: ${dTotal.toFixed(2)}</span> | <span style="color:var(--dark);font-weight:bold;">New Period Due: ${(sTotal-cTotal-dTotal).toFixed(2)}</span>`;
+    }
+    function printSingleMemoReport(name,date,type,note,amt) {
+        const {jsPDF}=window.jspdf; const doc=new jsPDF('p','mm','a5');
+        doc.setLineWidth(0.3); doc.rect(5,5,138,200);
+        let y=15;
+        doc.setFont("helvetica","bold"); doc.setFontSize(16);
+        if(shopInfo.extras[0]){doc.text(shopInfo.extras[0].value,74,y,{align:'center'});y+=6;}
+        doc.setFontSize(9); doc.setFont("helvetica","normal");
+        for(let i=1;i<shopInfo.extras.length;i++){doc.text(shopInfo.extras[i].value,74,y,{align:'center'});y+=5;}
+        doc.line(10,y,138,y); y+=8;
+        doc.setFontSize(11);
+        const title=type==='Return'?'PRODUCT RETURN SLIP':(type==='Refund'?'CASH REFUND SLIP':(type==='OldCashReceived'?'OLD CASH RECEIPT':(type==='Gift'?'GIFT ENTRY SLIP':(type==='Discount'?'DISCOUNT / ADJUSTMENT SLIP':(type==='Payment'?'MONEY RECEIPT':'TRANSACTION SLIP')))));
+        doc.text(title,10,y); y+=8;
+        doc.setFontSize(9); doc.text(`Customer: ${name}`,10,y); doc.text(`Date: ${date}`,90,y);
+        const cust=ledger[name];
+        if(cust&&cust.pName){y+=5;doc.text(`Proprietor: ${cust.pName}`,10,y);y+=5;doc.text(`Address: ${cust.addr}`,10,y);y+=5;doc.text(`Mobile: ${cust.mob}`,10,y);}
+        const aLabel=type==='Gift'?'Gift Amount':(type==='Refund'?'Refund Cash':(type==='OldCashReceived'?'Old Cash Received':(type==='Discount'?'Discount Amount':(type==='Payment'?'Cash Received':'Amount'))));
+        const hColor=type==='Gift'||type==='Discount'?[246,194,62]:(type==='Refund'?[231,74,59]:(type==='OldCashReceived'?[108,92,231]:[0,0,0]));
+        doc.autoTable({startY:y+5,head:[['Description','Type',aLabel]],body:[[note,type,amt.toFixed(2)]],theme:'grid',headStyles:{fillColor:hColor},styles:{fontSize:10}});
+        let fy=doc.lastAutoTable.finalY+10;
+        doc.setFont("helvetica","bold");
+        if(type==='Return'){doc.setTextColor(211,84,0);doc.text(`Product Return / Sale Deduction: TK ${amt.toFixed(2)}`,10,fy);doc.setTextColor(0,0,0);fy+=6;doc.setFont("helvetica","normal");doc.setFontSize(8);doc.text(`Returned product value is deducted from the customer's net sale and balance.`,10,fy);}
+        else if(type==='Discount'){doc.setTextColor(211,84,0);doc.text(`Discount Given: TK ${amt.toFixed(2)}`,10,fy);doc.setTextColor(0,0,0);fy+=6;doc.setFont("helvetica","normal");doc.setFontSize(8);doc.text(`Note: This amount has been deducted from the customer's due. No cash collected.`,10,fy);}
+        else if(type==='Gift'){doc.setTextColor(211,84,0);doc.text(`Gift Given: TK ${amt.toFixed(2)}`,10,fy);doc.setTextColor(0,0,0);fy+=6;doc.setFont("helvetica","normal");doc.setFontSize(8);doc.text(`This gift amount has been deducted from the customer's due.`,10,fy);}
+        else if(type==='Refund'){doc.setTextColor(231,74,59);doc.text(`Cash refunded to customer: TK ${amt.toFixed(2)}`,10,fy);doc.setTextColor(0,0,0);}
+        else if(type==='OldCashReceived'){doc.setTextColor(108,92,231);doc.text(`Old Cash Received: TK ${amt.toFixed(2)}`,10,fy);doc.setTextColor(0,0,0);fy+=6;doc.setFont("helvetica","normal");doc.setFontSize(8);doc.text(`This amount reduces the customer's old cash balance.`,10,fy);}
+        else{doc.text(`Net Amount: TK ${amt.toFixed(2)}`,10,fy);}
+        doc.setFont("helvetica","normal"); doc.line(15,190,50,190); doc.text("Customer Sign",15,194); doc.line(100,190,135,190); doc.text("Authorized",100,194);
+        doc.save(`${type}_${name}.pdf`);
+    }
+    function generateSaleInvoice(name,date,items,currentBill,oldDue,received,totalDue) {
+        const {jsPDF}=window.jspdf; const doc=new jsPDF('p','mm','a5');
+        let cy=15;
+        doc.setFont("helvetica","bold"); doc.setFontSize(16);
+        if(shopInfo.extras[0]){doc.text(shopInfo.extras[0].value,74,cy,{align:'center'});cy+=5;}
+        doc.setFontSize(9); doc.setFont("helvetica","normal");
+        for(let i=1;i<shopInfo.extras.length;i++){doc.text(shopInfo.extras[i].value,74,cy,{align:'center'});cy+=4.5;}
+        doc.line(10,cy,138,cy); cy+=7;
+        doc.setFontSize(11); doc.text("SALES INVOICE",10,cy); cy+=6;
+        doc.setFontSize(9); doc.text(`Customer: ${name}`,10,cy); doc.text(`Date: ${date}`,80,cy);
+        const cust=ledger[name];
+        if(cust&&cust.pName){cy+=4.5;doc.text(`Proprietor: ${cust.pName}`,10,cy);cy+=4.5;doc.text(`Address: ${cust.addr}`,10,cy);cy+=4.5;doc.text(`Mobile: ${cust.mob}`,10,cy);}
+        doc.autoTable({startY:cy+4,head:[['Product','Qty+B','Rate','Total']],body:items,theme:'grid',headStyles:{fillColor:[78,115,223]},styles:{fontSize:8}});
+        let fy=doc.lastAutoTable.finalY+8;
+        doc.setFontSize(10); doc.setFont("helvetica","normal");
+        doc.text(`Current Bill:`,75,fy); doc.text(`TK ${currentBill.toFixed(2)}`,110,fy);
+        doc.text(`Previous Due:`,75,fy+5); doc.text(`TK ${oldDue.toFixed(2)}`,110,fy+5);
+        doc.setFont("helvetica","bold"); doc.text(`Total Bill:`,75,fy+10); doc.text(`TK ${(currentBill+oldDue).toFixed(2)}`,110,fy+10);
+        doc.setDrawColor(0); doc.line(75,fy+12,135,fy+12);
+        doc.setTextColor(28,200,138); doc.text(`Received Cash:`,75,fy+17); doc.text(`TK ${received.toFixed(2)}`,110,fy+17);
+        doc.setTextColor(231,74,59); doc.text(`Net Payable Due:`,75,fy+22); doc.text(`TK ${totalDue.toFixed(2)}`,110,fy+22);
+        doc.save(`Invoice_${name}.pdf`);
+    }
+    function editTransaction(name,idx) {
+        const t=ledger[name].transactions[idx];
+        const nd=prompt("Edit Date:",t.date); if(nd===null)return;
+        const nt=prompt("Edit Type:",t.type); if(nt===null)return;
+        const ni=prompt("Edit Details:",t.items); if(ni===null)return;
+        const na=prompt("Edit Amount:",t.amount); if(na===null)return;
+        t.date=nd;t.type=nt;t.items=ni;t.amount=parseFloat(na)||0;
+        updateTotals(name); autoSaveData(); showHistory(name); renderEverything();
+    }
+    function openCartModal() {
+        if(tempCart.length===0)return alert("Empty");
+        const title=document.getElementById("cart-modal-title");
+        const btn=document.getElementById("cart-confirm-btn");
+        title.innerText=cartType==='Sale'?"🛒 Sale Cart":"📝 Order Cart";
+        btn.innerText=cartType==='Sale'?"Confirm Sale":"Confirm Order";
+        document.getElementById("cartTableBody").innerHTML=tempCart.map((item,i)=>`<tr><td>${item.name}</td><td>${item.qty} p ${item.bonus>0?'+'+item.bonus+' p':''}</td><td>${item.rate}</td><td>TK ${item.total}</td><td><button onclick="removeFromCart(${i})" style="background:red;color:white;border:none;border-radius:5px;">×</button></td></tr>`).join('');
+        document.getElementById("cartModal").style.display="block";
+    }
+    function removeFromCart(i) { tempCart.splice(i,1); if(tempCart.length===0)closeModal(); else openCartModal(); renderEverything(); }
+    function processFinalCart() {
+        const sel=document.getElementById("cart-client-select");
+        const manual=document.getElementById("cart-client-manual");
+        const cashPaidInput=document.getElementById("cart-cash-paid");
+        let client=(sel.value==="NEW_CUST")?manual.value.trim():sel.value;
+        const cashReceived=parseFloat(cashPaidInput.value)||0;
+        if(!client||tempCart.length===0)return alert("Select Customer & Add Items");
+        if(sel.value==="NEW_CUST"){
+            if(!ledger[client])ledger[client]={totalBought:0,totalPaid:0,transactions:[],pName:'',addr:'',mob:''};
+            ledger[client].pName=document.getElementById("cart-client-proprietor").value;
+            ledger[client].addr=document.getElementById("cart-client-address").value;
+            ledger[client].mob=document.getElementById("cart-client-mobile").value;
+        }
+        let prevDue=0;
+        if(ledger[client]) {
+            const currentTotals=getCurrentAccountPeriod(ledger[client]);
+            prevDue=isAdmin&&includeOldCashInAdminView?getCurrentDueIncludingOldCash(ledger[client],currentTotals):currentTotals.newDue;
+        }
+        let total=0, details=[], pdfItems=[];
+        tempCart.forEach((item,i)=>{
+            if(cartType==='Sale')products[item.pIdx].stock-=(item.qty+item.bonus);
+            details.push(`${i+1}. ${item.name} (${item.qty}p + ${item.bonus}p)`);
+            total+=item.total;
+            pdfItems.push([item.name,`${item.qty} + ${item.bonus}`,item.rate.toFixed(2),item.total.toFixed(2)]);
+        });
+        const dateStr=new Date().toLocaleString();
+        const transactionMeta=cartType==='Sale'?{saleItems:tempCart.map(item=>({productName:item.name,qty:Number(item.qty)||0,bonus:Number(item.bonus)||0}))}:null;
+        recordTransaction(client,cartType,details.join('\n'),total,transactionMeta);
+        if(cashReceived>0)recordTransaction(client,"Payment","Cash received against invoice",cashReceived);
+        const remDue=(prevDue+total)-cashReceived;
+        generateSaleInvoice(client,dateStr,pdfItems,total,prevDue,cashReceived,remDue);
+        tempCart=[]; manual.value=""; cashPaidInput.value="";
+        autoSaveData(); closeModal(); renderEverything();
+    }
+    function saveAll() { autoSaveData(); alert("Cloud & Local Saved!"); }
+    function deleteCustomer(n) {
+        if(confirm("Delete?")) {
+            lastDeletedData={type:'customer',name:n,data:JSON.parse(JSON.stringify(ledger[n]))};
+            recycleBin.push(lastDeletedData); delete ledger[n];
+            document.getElementById("restore-btn").style.display="inline-flex";
+            autoSaveData(); renderEverything();
+        }
+    }
+    function deleteProduct(i) {
+        if(confirm("Delete?")) {
+            lastDeletedData={type:'product',data:JSON.parse(JSON.stringify(products[i]))};
+            recycleBin.push(lastDeletedData); products.splice(i,1);
+            document.getElementById("restore-btn").style.display="inline-flex";
+            autoSaveData(); renderEverything();
+        }
+    }
+    function restoreLastDeleted() {
+        if(!lastDeletedData)return;
+        if(lastDeletedData.type==='customer')ledger[lastDeletedData.name]=lastDeletedData.data;
+        else products.push(lastDeletedData.data);
+        lastDeletedData=null;
+        document.getElementById("restore-btn").style.display="none";
+        recycleBin.pop(); autoSaveData(); renderEverything();
+    }
+    function calculateGlobalDashboard() {
+        const period=getCurrentFiscalPeriod();
+        const sel=document.getElementById("dashboard-month-filter");
+        const requestedFilter=sel.value||"fiscal";
+        const monthDates=new Map();
+        Object.keys(ledger).forEach(name=>{
+            ledger[name].transactions.forEach(t=>{
+                const transactionDate=new Date(t.date);
+                if(Number.isNaN(transactionDate.getTime())) return;
+                const mk=transactionDate.toLocaleString('default',{month:'long',year:'numeric'});
+                if(isAdmin||(transactionDate>=period.start&&transactionDate<period.endExclusive)) monthDates.set(mk,new Date(transactionDate.getFullYear(),transactionDate.getMonth(),1));
+            });
+        });
+        const monthOptions=[...monthDates.entries()].sort((a,b)=>a[1]-b[1]);
+        const availableFilters=new Set(["fiscal",...(isAdmin?["all"]:[]),...monthOptions.map(([month])=>month)]);
+        const filter=availableFilters.has(requestedFilter)?requestedFilter:"fiscal";
+        sel.innerHTML='<option value="fiscal">Current Financial Year</option>'+(isAdmin?'<option value="all">All Time History</option>':"")+monthOptions.map(([month])=>`<option value="${month}">${month}</option>`).join("");
+        sel.value=filter;
+        let gS=0,gP=0,gD=0;
+        Object.keys(ledger).forEach(name=>{
+            ledger[name].transactions.forEach(t=>{
+                const transactionDate=new Date(t.date);
+                if(Number.isNaN(transactionDate.getTime())) return;
+                const mk=transactionDate.toLocaleString('default',{month:'long',year:'numeric'});
+                const inFiscalYear=transactionDate>=period.start&&transactionDate<period.endExclusive;
+                const include=filter==="all"?isAdmin:(filter==="fiscal"?inFiscalYear:(mk===filter&&(isAdmin||inFiscalYear)));
+                if(include){
+                    if(t.type==="Sale")gS+=t.amount;
+                    else if(t.type==="Return"||t.type==="Refund")gS-=t.amount;
+                    else if(t.type==="Payment")gP+=t.amount;
+                    else if(t.type==="Discount"||t.type==="Gift")gD+=t.amount;
+                }
+            });
+        });
+        document.getElementById("global-total-sale").innerText="TK "+gS.toFixed(2);
+        document.getElementById("global-total-cash").innerText="TK "+gP.toFixed(2);
+        document.getElementById("global-total-discount").innerText="TK "+gD.toFixed(2);
+        document.getElementById("global-total-due").innerText="TK "+(gS-gP-gD).toFixed(2);
+    }
+    function showHistory(name) {
+        const acc=ledger[name];
+        activeHistoryCustomer=name;
+        const period=getCurrentFiscalPeriod();
+        const totals=calculateAccountPeriod(acc,period.start,period.endExclusive);
+        const showOld=isAdmin&&includeOldCashInAdminView;
+        document.getElementById("sum-bill-label").innerText="NEW PERIOD SALES";
+        document.getElementById("sum-cash-label").innerText="NEW PERIOD CASH";
+        document.getElementById("sum-due-label").innerText=showOld?"COMBINED DUE":"NEW PERIOD DUE";
+        document.getElementById("sum-total-bill").innerText="TK "+(totals.totalSell-totals.refundCash).toFixed(2);
+        document.getElementById("sum-total-cash").innerText="TK "+totals.totalCash.toFixed(2);
+        const oldCash=showOld?totals.openingBalance:0;
+        document.getElementById("sum-total-due").innerText="TK "+(showOld?totals.closingDue:totals.newDue).toFixed(2);
+        document.getElementById("sum-old-balance-card").style.display=showOld?"block":"none";
+        document.getElementById("sum-old-balance").innerText=showOld?"TK "+oldCash.toFixed(2):"Hidden";
+        document.getElementById("sum-old-cash-received-card").style.display=showOld?"block":"none";
+        document.getElementById("sum-old-cash-received").innerText=showOld?"TK "+totals.oldCashReceived.toFixed(2):"Hidden";
+        document.getElementById("modalTitle").innerText=name+"'s History";
+        let html="";
+        for(let i=acc.transactions.length-1;i>=0;i--){
+            const t=acc.transactions[i];
+            const transactionDate=new Date(t.date);
+            if(!showOld&&(Number.isNaN(transactionDate.getTime())||transactionDate<period.start||transactionDate>=period.endExclusive)) continue;
+            const col=t.type==='Sale'?'#e74a3b':(t.type==='Return'||t.type==='Refund'?'#d35400':(t.type==='Discount'||t.type==='Gift'?'#d35400':(t.type==='OldCashReceived'?'#6c5ce7':(t.type==='Payment'?'#1cc88a':'#555'))));
+            html+=`<tr><td><small>${t.date}</small></td><td style="color:${col};font-weight:bold;">${t.type}</td><td class="details-cell">${t.items}</td><td>${t.type==='Return'||t.type==='Refund'?'- ':''}TK ${t.amount.toFixed(2)}</td><td>${isAdmin?`<button class="btn btn-warning" onclick="editTransaction('${name}',${i})">✎</button> <button class="btn btn-danger" onclick="delT('${name}',${i})">✖</button>`:'-'}</td></tr>`;
+        }
+        document.getElementById("historyTableBody").innerHTML=html;
+        document.getElementById("historyModal").style.display="block";
+    }
+    function delT(name,idx) {
+        const transaction=ledger[name]?.transactions[idx];
+        if(!transaction)return;
+        if(transaction.type==="Return"&&Array.isArray(transaction.returnItems)){
+            for(const returned of transaction.returnItems){
+                const product=products.find(p=>p.name===returned.productName);
+                if(!product||Number(product.stock)<Number(returned.qty)){
+                    alert(`Cannot delete this return: stock for "${returned.productName}" is no longer available to reverse.`);
+                    return;
+                }
+            }
+        }
+        if(!confirm("Delete?"))return;
+        if(transaction.type==="Return"&&Array.isArray(transaction.returnItems)){
+            transaction.returnItems.forEach(returned=>{
+                const product=products.find(p=>p.name===returned.productName);
+                if(product)product.stock=Math.max(0,(Number(product.stock)||0)-Number(returned.qty||0));
+            });
+        }
+        ledger[name].transactions.splice(idx,1);
+        updateTotals(name);autoSaveData();showHistory(name);renderEverything();
+    }
+    function updateTotals(name) {
+        const acc=ledger[name]; captureLegacyOpeningBalance(acc); acc.totalBought=0; acc.totalPaid=0; acc.totalDiscount=0;
+        acc.transactions.forEach(t=>{
+            if(t.type==="Sale")acc.totalBought+=t.amount;
+            else if(t.type==="Return"||t.type==="Refund")acc.totalBought-=t.amount;
+            else if(t.type==="Payment"||t.type==="OldCashReceived")acc.totalPaid+=t.amount;
+            else if(t.type==="Discount"||t.type==="Gift")acc.totalDiscount+=t.amount;
+        });
+    }
+    function recordTransaction(name,type,detail,amount,extraData) {
+        if(!ledger[name])ledger[name]={totalBought:0,totalPaid:0,transactions:[],pName:'',addr:'',mob:''};
+        ledger[name].transactions.push({date:new Date().toLocaleString(),type,items:detail,amount,...(extraData||{})});
+        updateTotals(name);
+    }
+    function processDirectPayment() {
+        const sel=document.getElementById("pay-name-select");
+        const manual=document.getElementById("pay-name-manual");
+        let client=(sel.value==="NEW_CUST")?manual.value.trim():sel.value;
+        const a=parseFloat(document.getElementById("pay-amount").value);
+        const di=document.getElementById("pay-date").value;
+        let finalDate=di?new Date(di).toLocaleString():new Date().toLocaleString();
+        if(!client||isNaN(a))return alert("Data Error");
+        if(!ledger[client])ledger[client]={totalBought:0,totalPaid:0,transactions:[],pName:'',addr:'',mob:''};
+        if(sel.value==="NEW_CUST"){
+            ledger[client].pName=document.getElementById("pay-name-proprietor").value;
+            ledger[client].addr=document.getElementById("pay-name-address").value;
+            ledger[client].mob=document.getElementById("pay-name-mobile").value;
+        }
+        const type=document.getElementById("pay-type").value;
+        const note=document.getElementById("pay-note").value;
+        const detail=note||(type==='Discount'?'Discount Adjustment':(type==='Gift'?'Gift Given':(type==='Refund'?'Refund Cash Paid':(type==='OldCashReceived'?'Old Cash Received':(type==='Payment'?'Cash Received':'Entry')))));
+        captureLegacyOpeningBalance(ledger[client]);
+        ledger[client].transactions.push({date:finalDate,type,items:detail,amount:a});
+        updateTotals(client); autoSaveData(); renderEverything(); closeModal();
+    }
+    function addNewProduct() {
+        const sel=document.getElementById("admin-p-select");
+        const n=document.getElementById("new-p-name").value.trim();
+        const s=parseInt(document.getElementById("new-p-stock").value)||0;
+        const p=parseFloat(document.getElementById("new-p-price").value)||0;
+        if(!n)return alert("Product Name Required");
+        const ei=products.findIndex(x=>x.name.toLowerCase()===n.toLowerCase());
+        if(sel.value!=="new"){products[sel.value].stock+=s;products[sel.value].price=p;products[sel.value].name=n;}
+        else if(ei!==-1){if(confirm(`"${n}" exists. Update?`)){products[ei].stock+=s;products[ei].price=p;}else return;}
+        else products.push({name:n,stock:s,price:p});
+        document.getElementById("new-p-name").value="";document.getElementById("new-p-stock").value="";document.getElementById("new-p-price").value="";
+        autoSaveData(); renderEverything();
+    }
+    function openCommissionView() {
+        if(!Array.isArray(commissionSettings)) commissionSettings = [];
+        document.getElementById("commissionModal").style.display = "block";
+        document.getElementById("commission-admin-panel").style.display = isAdmin ? "block" : "none";
+        document.getElementById("comm-action-col").style.display = isAdmin ? "" : "none";
+        populateCommissionCustomerDropdown();
+        renderCommissionTable();
+        renderCommissionCalcGrid();
+    }
+    function escapeCommissionHTML(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function(ch) {
+            return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
+        });
+    }
+    function getCommissionCustomerTotals(customerName) {
+        const account = ledger[customerName] || {};
+        const totals=getCurrentAccountPeriod(account);
+        const sale=totals.totalSell-totals.refundCash;
+        const cash=totals.totalCash;
+        const oldCash=totals.openingBalance;
+        const due=isAdmin&&includeOldCashInAdminView?totals.closingDue:totals.newDue;
+        return { sale, cash, due, openingBalance:oldCash };
+    }
+    function formatCommissionMoney(value) {
+        return "TK " + (Number(value) || 0).toLocaleString(undefined, {maximumFractionDigits:2});
+    }
+    function populateCommissionCustomerDropdown() {
+        const select = document.getElementById("comm-cust-select");
+        if(!select) return;
+        const previous = select.value;
+        const names = Object.keys(ledger).sort((a,b)=>a.localeCompare(b));
+        select.innerHTML = '<option value="">-- Choose Customer --</option>' +
+            names.map(name=>`<option value="${escapeCommissionHTML(name)}">${escapeCommissionHTML(name)}</option>`).join('') +
+            (names.length ? '' : '<option value="" disabled>No customers found</option>');
+        if(names.includes(previous)) select.value = previous;
+    }
+    function saveCommissionSetting() {
+        if(!isAdmin) { alert("Admin access required to change commission settings."); return; }
+        const custName = document.getElementById("comm-cust-select").value.trim();
+        const targetRaw = document.getElementById("comm-target").value;
+        const percentRaw = document.getElementById("comm-percent").value;
+        const target = Number(targetRaw);
+        const percent = Number(percentRaw);
+        const note = document.getElementById("comm-note").value.trim();
+        const editId = document.getElementById("comm-edit-id").value;
+        if(!custName) { alert("Please select a customer."); return; }
+        if(targetRaw === "" || !Number.isFinite(target) || target < 0) { alert("Enter a valid sales target (0 or more)."); return; }
+        if(percentRaw === "" || !Number.isFinite(percent) || percent <= 0 || percent > 100) { alert("Commission percentage must be greater than 0 and no more than 100."); return; }
+        if(editId) {
+            const entry = commissionSettings.find(item=>String(item.id) === String(editId));
+            if(!entry) { alert("Commission setting was not found. Refresh and try again."); return; }
+            entry.custName = custName; entry.target = target; entry.percent = percent; entry.note = note; entry.updatedAt = Date.now();
+        } else {
+            const existing = commissionSettings.find(item=>item.custName === custName);
+            if(existing) {
+                if(!confirm(`A commission setting already exists for "${custName}". Update it?`)) return;
+                existing.target = target; existing.percent = percent; existing.note = note; existing.updatedAt = Date.now();
+            } else {
+                commissionSettings.push({id:Date.now(),custName,target,percent,note,createdAt:Date.now()});
+            }
+        }
+        document.getElementById("comm-cust-select").value = "";
+        document.getElementById("comm-target").value = "";
+        document.getElementById("comm-percent").value = "";
+        document.getElementById("comm-note").value = "";
+        document.getElementById("comm-edit-id").value = "";
+        autoSaveData();
+        renderCommissionTable();
+        renderCommissionCalcGrid();
+    }
+    function editCommissionSetting(id) {
+        if(!isAdmin) { alert("Admin access required to change commission settings."); return; }
+        const entry = commissionSettings.find(item=>String(item.id) === String(id));
+        if(!entry) return;
+        populateCommissionCustomerDropdown();
+        document.getElementById("comm-cust-select").value = entry.custName;
+        document.getElementById("comm-target").value = entry.target ?? 0;
+        document.getElementById("comm-percent").value = entry.percent ?? "";
+        document.getElementById("comm-note").value = entry.note || "";
+        document.getElementById("comm-edit-id").value = entry.id;
+        document.getElementById("commission-admin-panel").scrollIntoView({behavior:"smooth",block:"start"});
+    }
+    function deleteCommissionSetting(id) {
+        if(!isAdmin) { alert("Admin access required to change commission settings."); return; }
+        const entry = commissionSettings.find(item=>String(item.id) === String(id));
+        if(!entry) return;
+        if(!confirm(`Delete commission setting for "${entry.custName}"?`)) return;
+        commissionSettings = commissionSettings.filter(item=>String(item.id) !== String(id));
+        autoSaveData();
+        renderCommissionTable();
+        renderCommissionCalcGrid();
+    }
+    function renderCommissionTable() {
+        const tbody = document.getElementById("comm-settings-tbody");
+        if(!tbody) return;
+        const admin = isAdmin;
+        document.getElementById("comm-action-col").style.display = admin ? "" : "none";
+        const query = (document.getElementById("comm-search").value || "").trim().toLowerCase();
+        const filtered = commissionSettings.filter(item=>!query || String(item.custName||"").toLowerCase().includes(query));
+        if(!filtered.length) {
+            tbody.innerHTML = `<tr><td colspan="${admin?6:5}" class="commission-empty">${commissionSettings.length ? "No matching commission settings." : "No commission settings yet."}${admin && !commissionSettings.length ? " Add one using the form above." : ""}</td></tr>`;
+            return;
+        }
+        tbody.innerHTML = filtered.map((item,index)=>{
+            const totals = getCommissionCustomerTotals(item.custName);
+            const target = Number(item.target)||0;
+            const progress = target > 0 ? Math.min(100,Math.round(totals.sale/target*100)) : 0;
+            const progressHTML = target > 0 ? `<div style="height:6px;width:100px;background:#eee;border-radius:5px;overflow:hidden;margin-top:5px;"><div style="height:100%;width:${progress}%;background:${progress>=100?'#00b894':progress>=60?'#f1c40f':'#d63031'};"></div></div><small>${progress}% complete</small>` : "";
+            const safeId = Number(item.id)||0;
+            const actions = admin ? `<td style="white-space:nowrap;"><button class="commission-action-btn" style="background:#0984e3;" onclick="editCommissionSetting(${safeId})">✏️ Edit</button><button class="commission-action-btn" style="background:#d63031;" onclick="deleteCommissionSetting(${safeId})">🗑️ Delete</button></td>` : "";
+            return `<tr><td>${index+1}</td><td><strong>${escapeCommissionHTML(item.custName)}</strong></td><td>${formatCommissionMoney(target)}${progressHTML}</td><td><span class="commission-pill">${Number(item.percent)||0}%</span></td><td>${escapeCommissionHTML(item.note||"—")}</td>${actions}</tr>`;
+        }).join("");
+    }
+    function renderCommissionCalcGrid() {
+        const grid = document.getElementById("commission-calc-grid");
+        if(!grid) return;
+        if(!Array.isArray(commissionSettings) || commissionSettings.length === 0) {
+            grid.innerHTML = '<p class="commission-empty" style="grid-column:1/-1;">Add a commission setting to see the calculation here.</p>';
+            return;
+        }
+        const colors = ["linear-gradient(135deg,#6c5ce7,#a29bfe)","linear-gradient(135deg,#00b894,#55efc4)","linear-gradient(135deg,#0984e3,#74b9ff)","linear-gradient(135deg,#e17055,#fdcb6e)"];
+        grid.innerHTML = commissionSettings.map((setting,index)=>{
+            const totals = getCommissionCustomerTotals(setting.custName);
+            const rate = Number(setting.percent)||0;
+            const target = Number(setting.target)||0;
+            const earned = Math.round(totals.sale*rate/100);
+            const companyShare = totals.sale-earned;
+            const settlement = earned-totals.due;
+            const progress = target>0 ? Math.min(100,Math.round(totals.sale/target*100)) : 0;
+            const color = settlement>0 ? "#00b894" : settlement<0 ? "#d63031" : "#0984e3";
+            const settlementBg = settlement>0 ? "rgba(0,184,148,.09)" : settlement<0 ? "rgba(214,48,49,.09)" : "rgba(9,132,227,.09)";
+            const settlementText = settlement>0 ? `Company pays customer ${formatCommissionMoney(settlement)}` : settlement<0 ? `Customer pays company ${formatCommissionMoney(Math.abs(settlement))}` : "Settled — no one pays anything";
+            return `<div class="commission-calc-card">
+<div class="commission-calc-card-header" style="background:${colors[index%colors.length]};"><span>👤 ${escapeCommissionHTML(setting.custName)}</span><span class="commission-pill" style="background:rgba(255,255,255,.28);color:#fff;margin-left:auto;">${rate}% commission</span></div>
+<div class="commission-calc-card-body">
+                    ${target>0?`<div style="background:rgba(108,92,231,.06);border-radius:9px;padding:10px;margin-bottom:9px;"><div style="display:flex;justify-content:space-between;font-size:.78rem;font-weight:700;"><span>🎯 Current-year target progress</span><span>${progress}%</span></div><div style="height:8px;background:#eee;border-radius:6px;overflow:hidden;margin:6px 0;"><div style="width:${progress}%;height:100%;background:${progress>=100?'#00b894':'#6c5ce7'};"></div></div><small>${formatCommissionMoney(totals.sale)} current-year sales / ${formatCommissionMoney(target)} target</small></div>`:""}
+<div class="commission-easy-step"><span class="commission-easy-number">1</span><div><span class="commission-easy-step-title">Current-year sales: ${formatCommissionMoney(totals.sale)}</span><span class="commission-easy-step-note">Commission is calculated from this financial year's net sales; target is for progress only.</span></div></div>
+<div class="commission-easy-step"><span class="commission-easy-number">2</span><div style="width:100%;"><span class="commission-easy-step-title">Customer commission earned</span><span class="commission-easy-step-note">Actual sales × commission rate</span><div class="commission-easy-formula">${formatCommissionMoney(totals.sale)} × ${rate}% = <strong>${formatCommissionMoney(earned)}</strong></div></div></div>
+<div class="commission-easy-step"><span class="commission-easy-number">3</span><div><span class="commission-easy-step-title">Compare commission with current due</span><span class="commission-easy-step-note">Payments reduce due; they do not reduce earned commission.</span></div></div>
+<div style="margin-top:10px;">
+<div class="commission-result-row"><span>💵 Paid / cash received</span><strong style="color:#00b894;">${formatCommissionMoney(totals.cash)}</strong></div>
+<div class="commission-result-row"><span>⏳ ${isAdmin&&includeOldCashInAdminView?"Combined due (old + new)":"Current-year due"}</span><strong style="color:#d63031;">${formatCommissionMoney(totals.due)}</strong></div>
+<div class="commission-result-row"><span>🏢 Company share</span><strong style="color:#6c5ce7;">${formatCommissionMoney(companyShare)}</strong></div>
+</div>
+<div class="commission-easy-settlement" style="background:${settlementBg};border-color:${color};color:${color};"><strong>Final settlement</strong><div style="font-weight:800;margin-top:5px;">${settlementText}</div><small style="display:block;margin-top:5px;">Commission ${formatCommissionMoney(earned)} − Due ${formatCommissionMoney(totals.due)}</small></div>
+                    ${setting.note?`<div style="margin-top:9px;font-size:.76rem;color:#777;">📝 ${escapeCommissionHTML(setting.note)}</div>`:""}
+</div>
+</div>`;
+        }).join("");
+    }
+    function editCustomerDetails(oldName) {
+        const cust=ledger[oldName];
+        const nn=prompt("Edit Shop Name:",oldName); if(nn===null)return;
+        const np=prompt("Edit Proprietor:",cust.pName||""); if(np===null)return;
+        const na=prompt("Edit Address:",cust.addr||""); if(na===null)return;
+        const nm=prompt("Edit Mobile:",cust.mob||""); if(nm===null)return;
+        if(nn.trim()!==oldName){ledger[nn.trim()]=cust;delete ledger[oldName];}
+        ledger[nn.trim()].pName=np; ledger[nn.trim()].addr=na; ledger[nn.trim()].mob=nm;
+        autoSaveData(); renderEverything();
+    }
+    function login() { if(prompt("Pass:")===ADMIN_PASS){localStorage.setItem("is_admin_v2","true");location.reload();} }
+    function logout() { localStorage.removeItem("is_admin_v2"); location.reload(); }
+    function closeModal() { document.querySelectorAll('.modal').forEach(m=>m.style.display='none'); }
+    function openPayModal() { const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());document.getElementById("pay-date").value=now.toISOString().slice(0,16);document.getElementById("payModal").style.display="block"; }
+    function checkAdminBeforeReport() {
+        if(isAdmin) {
+            prepareFiscalReport();
+            document.getElementById("reportModal").style.display="block";
+        } else login();
+    }
+    function generatePDF() {
+        if(!isAdmin) return alert("Admin access required to print customer balances.");
+        const sel=document.getElementById("report-customer-select").value;
+        const start=document.getElementById("report-start").value;
+        const end=document.getElementById("report-end").value;
+        if(!start||!end)return alert("Select Date Range");
+        const startDate=parseInputDate(start);
+        const endDate=parseInputDate(end);
+        if(Number.isNaN(startDate.getTime())||Number.isNaN(endDate.getTime())||endDate<startDate) return alert("Choose a valid report date range.");
+        const endExclusive=new Date(endDate);endExclusive.setDate(endExclusive.getDate()+1);
+        const includeOld=document.getElementById("report-include-old").checked;
+        const names=(sel==="ALL"?Object.keys(ledger):[sel]).filter(name=>!!ledger[name]).sort((a,b)=>a.localeCompare(b));
+        const rows=[];
+        let grandOld=0,grandOldCashReceived=0,grandSell=0,grandCash=0,grandGift=0,grandDue=0,grandRefund=0;
+        names.forEach(name=>{
+            const totals=calculateAccountPeriod(ledger[name],startDate,endExclusive);
+            const old=includeOld?totals.openingBalance:0;
+            const due=totals.newDue;
+            const cash=totals.totalCash+(includeOld?totals.oldCashReceived:0);
+            if(totals.totalSell===0&&totals.totalCash===0&&totals.gift===0&&totals.refundCash===0&&(!includeOld||(old===0&&totals.oldCashReceived===0))) return;
+            const commission=commissionSettings.find(item=>item.custName===name);
+            const rate=commission
+                ? (commission.flatRate!==undefined&&commission.flatRate!==null?`TK ${Number(commission.flatRate).toFixed(2)} flat`:`${Number(commission.percent)||0}%`)
+                : "—";
+            rows.push({name,old,sell:totals.totalSell,cash,gift:totals.gift,due,refund:totals.refundCash,rate});
+            grandOld+=old;grandOldCashReceived+=includeOld?totals.oldCashReceived:0;grandSell+=totals.totalSell;grandCash+=cash;
+            grandGift+=totals.gift;grandDue+=due;grandRefund+=totals.refundCash;
+        });
+        if(!rows.length)return alert("No data found for this report.");
+        const {jsPDF}=window.jspdf;
+        const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+        const pageWidth=doc.internal.pageSize.getWidth?doc.internal.pageSize.getWidth():doc.internal.pageSize.width;
+        const centerX=pageWidth/2;
+        const shopName=shopInfo.extras&&shopInfo.extras[0]?shopInfo.extras[0].value:"";
+        if(shopName){doc.setFont("helvetica","normal");doc.setFontSize(8);doc.text(shopName,centerX,10,{align:"center"});}
+        doc.setFont("helvetica","bold");doc.setFontSize(13);doc.text("CUSTOMER SALES REPORT",centerX,18,{align:"center"});
+        const sameMonth=startDate.getFullYear()===endDate.getFullYear()&&startDate.getMonth()===endDate.getMonth();
+        const periodTitle=sameMonth
+            ? startDate.toLocaleString("en",{month:"long",year:"numeric"}).toUpperCase()
+            : `FINANCIAL PERIOD ${start} TO ${end}`;
+        doc.setFontSize(9);doc.text(periodTitle,centerX,25,{align:"center"});
+        doc.setFont("helvetica","normal");doc.setFontSize(6.5);
+        doc.text(`Report dates: ${start} to ${end}`,8,33);
+        doc.text(`Old Cash basis: customer balance before ${start}`,8,38);
+        doc.text(`Old Cash Received included in Total Cash: ${includeOld?"YES":"NO"}`,8,43);
+        if(includeOld) {
+            doc.text(`Old Cash total: TK ${grandOld.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`,8,48);
+        }
+        doc.text(`Generated: ${new Date().toLocaleString()}`,pageWidth-8,33,{align:"right"});
+        const headers=includeOld
+            ? ["Customer Name","Old Cash","Total Sell","Total Cash (New + Old)","Gift","% / Flat rate","Dues","Refund Cash"]
+            : ["Customer Name","Total Sell","Total Cash","Gift","% / Flat rate","Dues","Refund Cash"];
+        const body=rows.map((row,index)=>{
+            const cells=[`${index+1}. ${row.name}`];
+            if(includeOld) cells.push(`TK ${row.old.toFixed(2)}`);
+            cells.push(`TK ${row.sell.toFixed(2)}`,`TK ${row.cash.toFixed(2)}`,`TK ${row.gift.toFixed(2)}`,row.rate);
+            cells.push(row.due>0?`TK ${row.due.toFixed(2)}`:(row.due<0?`Credit TK ${Math.abs(row.due).toFixed(2)}`:"Closed"));
+            cells.push(row.refund>0?`TK ${row.refund.toFixed(2)}`:"—");
+            return cells;
+        });
+        const footer=["GRAND TOTAL"];
+        if(includeOld) footer.push(`TK ${grandOld.toFixed(2)}`);
+        footer.push(`TK ${grandSell.toFixed(2)}`,`TK ${grandCash.toFixed(2)}`,`TK ${grandGift.toFixed(2)}`,"—",`TK ${grandDue.toFixed(2)}`,`TK ${grandRefund.toFixed(2)}`);
+        const dueColumn=headers.indexOf("Dues");
+        const refundColumn=headers.indexOf("Refund Cash");
+        const oldColumn=includeOld?1:-1;
+        doc.autoTable({
+            startY:includeOld?58:48,head:[headers],body,foot:[footer],showFoot:"lastPage",theme:"grid",
+            margin:{left:8,right:8,top:8,bottom:8},
+            headStyles:{fillColor:[196,215,231],textColor:[20,30,40],fontStyle:"bold",halign:"center"},
+            footStyles:{fillColor:[218,238,214],textColor:[20,30,20],fontStyle:"bold",halign:"center"},
+            styles:{font:"helvetica",fontSize:6,cellPadding:1.2,halign:"center",valign:"middle",lineColor:[120,130,140],lineWidth:.2,overflow:"linebreak"},
+            columnStyles:includeOld
+                ? {0:{halign:"left",cellWidth:38},1:{cellWidth:21},2:{cellWidth:20},3:{cellWidth:29},4:{cellWidth:14},5:{cellWidth:17},6:{cellWidth:31},7:{cellWidth:18}}
+                : {0:{halign:"left",cellWidth:50},1:{cellWidth:25},2:{cellWidth:25},3:{cellWidth:18},4:{cellWidth:20},5:{cellWidth:31},6:{cellWidth:24}},
+            didParseCell:function(data){
+                if(data.section==="body"&&data.row.index<rows.length){
+                    const row=rows[data.row.index];
+                    if(data.column.index===dueColumn&&row.due>0){data.cell.styles.fillColor=[255,222,222];data.cell.styles.textColor=[150,20,20];data.cell.styles.fontStyle="bold";}
+                    if(data.column.index===refundColumn&&row.refund>0){data.cell.styles.fillColor=[210,241,222];data.cell.styles.textColor=[20,110,55];data.cell.styles.fontStyle="bold";}
+                    if(data.column.index===oldColumn&&includeOld){data.cell.styles.fillColor=[235,229,255];}
+                }
+            }
+        });
+        if(includeOld) {
+            const tableEndY=doc.lastAutoTable?.finalY||doc.autoTable.previous.finalY;
+            const pageHeight=doc.internal.pageSize.getHeight?doc.internal.pageSize.getHeight():doc.internal.pageSize.height;
+            let summaryY=tableEndY+5;
+            if(summaryY>pageHeight-8) {doc.addPage();summaryY=15;}
+            doc.setFont("helvetica","bold");doc.setFontSize(7);
+            doc.text(`Old Cash Received total (included in Total Cash): TK ${grandOldCashReceived.toFixed(2)}`,8,summaryY);
+        }
+        doc.save(`Customer_Sales_Report_${start}_to_${end}.pdf`);
+    }
+    migrateLegacyOpeningBalances(ledger);
+    if(isAdmin) {
+        document.getElementById("admin-zone").style.display="block";
+        document.getElementById("auth-status").innerText="🔓 Admin Mode";
+        document.getElementById("auth-status").className="badge btn-success";
+        populateFiscalPeriodUI();
+    }
+    window.onload = loadFromCloud;
+</script>
+</body>
+</html>
